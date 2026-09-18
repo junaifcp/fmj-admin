@@ -1,98 +1,83 @@
 // src/components/auth/SignInForm.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { SignIn, useUser } from "@clerk/clerk-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useRecruiterAuth } from "@/hooks/useRecruiterAuth";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/auth";
+import { PATHS } from "@/routes/paths";
+import AdminOtpForm from "./AdminOtpForm";
+import GoogleSignInButton from "./GoogleSignInButton";
+import { ACCESS_DENIED_FLAG, ACCESS_DENIED_MESSAGE } from "./accessDeniedFlag";
 
 const SignInForm: React.FC = () => {
   const navigate = useNavigate();
-  const { isSignedIn, user, isLoaded } = useUser();
-  const { isRecruiter, checking } = useRecruiterAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const [deniedMessage, setDeniedMessage] = useState<string | null>(null);
 
-  // Handle redirect after successful sign in
   useEffect(() => {
-    // wait until both clerk user and recruiter-check are ready
-    if (!isLoaded || checking) return;
-    if (!isSignedIn) return;
-
-    // Prefer trusted server-side value first
-    const publicRole = (user?.publicMetadata as any)?.role as
-      | string
-      | undefined;
-    const unsafeRole = (user?.unsafeMetadata as any)?.role as
-      | string
-      | undefined;
-    const role = publicRole ?? unsafeRole ?? undefined;
-
-    // If role missing -> show error message (user needs role assigned)
-    if (!role) {
-      console.error("User has no role assigned");
-      return;
+    try {
+      if (sessionStorage.getItem(ACCESS_DENIED_FLAG)) {
+        sessionStorage.removeItem(ACCESS_DENIED_FLAG);
+        setDeniedMessage(ACCESS_DENIED_MESSAGE);
+      }
+    } catch {
+      /* ignore storage errors */
     }
+  }, []);
 
-    // Admin routes
-    if (role === "admin" || role === "superadmin") {
-      navigate("/admin", { replace: true });
-      return;
+  // Login only: the admin portal only ever issues a session for an existing
+  // Mongo admin/superadmin (backend 401s unknown emails, 403s other roles).
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate(PATHS.ADMIN.DASHBOARD, { replace: true });
     }
+  }, [isAuthenticated, isLoading, navigate]);
 
-    // If recruiter auth hook says recruiter -> go to recruiter dashboard
-    if (isRecruiter || role === "recruiter") {
-      navigate("/recruiter/dashboard", { replace: true });
-      return;
-    }
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-    // User role -> default route
-    if (role === "user") {
-      navigate("/", { replace: true });
-      return;
-    }
-  }, [isSignedIn, isLoaded, user, isRecruiter, checking, navigate]);
-
-  const goToSignUp = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    navigate("/sign-up");
-  };
+  if (isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="space-y-4 text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-2">
             <div className="flex items-center">
               <span className="font-mono text-2xl font-bold text-primary mr-2">
-                FitMyJob
+                FitMySkill Admin
               </span>
-              {/* <span className="font-mono text-xl">Resume</span> */}
             </div>
           </div>
-
-          {/* Clerk SignIn - return here after auth; we'll route by role in useEffect */}
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-none",
-                formButtonPrimary: "bg-primary hover:bg-primary/90",
-                footer: "clerk-hidden-footer",
-              },
-            }}
-          />
-
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don’t have an account?{" "}
-            <button
-              onClick={goToSignUp}
-              className="ml-1 inline-block text-primary underline decoration-primary/30 hover:decoration-primary/60 focus:outline-none"
-              aria-label="Sign up"
-            >
-              Sign up
-            </button>
+          <p className="mb-6 text-center text-sm text-muted-foreground">
+            Sign in to the internal administration console.
           </p>
 
-          <style>{`.clerk-hidden-footer { display: none !important; }`}</style>
+          {deniedMessage && (
+            <p role="alert" className="mb-4 text-center text-sm text-destructive">
+              {deniedMessage}
+            </p>
+          )}
+
+          <AdminOtpForm />
+
+          <div className="mt-4">
+            <GoogleSignInButton />
+          </div>
         </CardContent>
       </Card>
     </div>

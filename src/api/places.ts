@@ -4,10 +4,6 @@ import {
   PlaceSuggestion,
   PlaceResolveRequest,
 } from "@/types/location";
-import type {
-  BusinessSuggestResponse,
-  BusinessResolveResponse,
-} from "@/types/onboarding";
 
 import { createApiClient } from "./apiClient";
 import { getAuthToken, clearTokenCache } from "@/utils/auth";
@@ -100,30 +96,6 @@ export const resolvePlaceId = async (
   });
 };
 
-// Set company location
-export const setCompanyLocation = async (
-  companyId: string,
-  request: PlaceResolveRequest,
-  opts?: { signal?: AbortSignal; token?: string }
-): Promise<any> => {
-  return post(`/companies/${companyId}/location`, request, {
-    signal: opts?.signal,
-    token: opts?.token,
-  });
-};
-
-// Set job location
-export const setJobLocation = async (
-  jobId: string,
-  request: PlaceResolveRequest,
-  opts?: { signal?: AbortSignal; token?: string }
-): Promise<any> => {
-  return post(`/jobs/${jobId}/location`, request, {
-    signal: opts?.signal,
-    token: opts?.token,
-  });
-};
-
 // Search places (optional single-line search)
 export const searchPlaces = async (
   query: string,
@@ -139,34 +111,3 @@ export const searchPlaces = async (
     token: opts?.token,
   });
 };
-
-// Business autocomplete suggestions
-// Accepts optional manual token (keeps backward compatibility). If token is provided it will be sent
-// in the Authorization header; otherwise the client's token getter is used.
-export async function businessSuggest(
-  q: string,
-  limit = 5,
-  token?: string,
-  opts?: { signal?: AbortSignal }
-): Promise<BusinessSuggestResponse> {
-  const params = { q, limit: String(limit) };
-  const config: any = { params, signal: opts?.signal };
-  if (token) config.headers = { Authorization: `Bearer ${token}` };
-  return unwrap<BusinessSuggestResponse>(
-    client.get("/places/business-suggest", config)
-  );
-}
-
-// Business resolve by placeId
-export async function businessResolve(
-  placeId: string,
-  token?: string,
-  opts?: { signal?: AbortSignal }
-): Promise<BusinessResolveResponse> {
-  const params = { placeId };
-  const config: any = { params, signal: opts?.signal };
-  if (token) config.headers = { Authorization: `Bearer ${token}` };
-  return unwrap<BusinessResolveResponse>(
-    client.get("/places/business-resolve", config)
-  );
-}

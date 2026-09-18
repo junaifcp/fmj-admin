@@ -10,8 +10,7 @@ type Environment = "development" | "staging" | "production";
 interface Config {
   env: Environment;
   apiBaseUrl: string;
-  clerkPublishableKey: string;
-  cashfreeMode: "production" | "sandbox";
+  googleClientId: string;
 }
 
 /**
@@ -36,38 +35,30 @@ export function getConfig(): Config {
   const env = getCurrentEnvironment();
 
   let apiBaseUrl: string;
-  let clerkPublishableKey: string;
-  let cashfreeMode: "production" | "sandbox";
+  let googleClientId: string;
 
   switch (env) {
     case "production":
       apiBaseUrl = import.meta.env.VITE_PROD_API_BASE_URL || "";
-      clerkPublishableKey =
-        import.meta.env.VITE_PROD_CLERK_PUBLISHABLE_KEY || "";
-      cashfreeMode = import.meta.env.VITE_PROD_CASHFREE_MODE || "production";
+      googleClientId = import.meta.env.VITE_PROD_GOOGLE_CLIENT_ID || "";
       break;
 
     case "staging":
       apiBaseUrl = import.meta.env.VITE_STAGING_API_BASE_URL || "";
-      clerkPublishableKey =
-        import.meta.env.VITE_STAGING_CLERK_PUBLISHABLE_KEY || "";
-      cashfreeMode = import.meta.env.VITE_STAGING_CASHFREE_MODE || "sandbox";
+      googleClientId = import.meta.env.VITE_STAGING_GOOGLE_CLIENT_ID || "";
       break;
 
     case "development":
     default:
       apiBaseUrl = import.meta.env.VITE_DEV_API_BASE_URL || "";
-      clerkPublishableKey =
-        import.meta.env.VITE_DEV_CLERK_PUBLISHABLE_KEY || "";
-      cashfreeMode = import.meta.env.VITE_DEV_CASHFREE_MODE || "sandbox";
+      googleClientId = import.meta.env.VITE_DEV_GOOGLE_CLIENT_ID || "";
       break;
   }
 
   return {
     env,
     apiBaseUrl,
-    clerkPublishableKey,
-    cashfreeMode,
+    googleClientId,
   };
 }
 
@@ -75,4 +66,4 @@ export function getConfig(): Config {
  * Export individual config values for convenience
  */
 export const config = getConfig();
-export const { apiBaseUrl, clerkPublishableKey, cashfreeMode } = config;
+export const { apiBaseUrl, googleClientId } = config;

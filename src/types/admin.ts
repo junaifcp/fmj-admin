@@ -233,7 +233,7 @@ export interface ManagedCompany {
 // Recruiter Management Types
 export interface AdminRecruiter {
   _id: string;
-  clerkUserId: string;
+  clerkUserId?: string;
   email: string;
   firstName?: string;
   lastName?: string;

@@ -116,25 +116,4 @@
   .btn-secondary {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2;
   }
-
-  /* Custom phone input styles */
-  .PhoneInput {
-    @apply flex items-center gap-2;
-  }
-
-  .PhoneInputCountry {
-    @apply flex items-center gap-2;
-  }
-
-  .PhoneInputCountryIcon {
-    @apply w-6 h-6 flex-shrink-0;
-  }
-
-  .PhoneInputCountrySelectArrow {
-    @apply ml-1 opacity-50;
-  }
-
-  .PhoneInputInput {
-    @apply flex-1 bg-transparent outline-none;
-  }
 }

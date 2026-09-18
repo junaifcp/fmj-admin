@@ -239,9 +239,8 @@ const AdminLayout: React.FC = () => {
     setSidebarOpen(false);
 
     try {
+      // Revokes the refresh cookie, clears the memory token, and redirects to "/".
       await signOut();
-      // signOut from AuthContext will call Clerk's signOut and handle redirect if you configured it.
-      // If you want to redirect manually after signOut, do it here (e.g. navigate('/login'))
     } catch (error) {
       console.error("Admin sign out error:", error);
     }

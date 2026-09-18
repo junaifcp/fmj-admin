@@ -3,11 +3,13 @@
 import React, { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useRoleAuth } from "@/hooks/useRoleAuth";
+import { useAuth } from "@/auth";
 import { UserRole, Permission } from "@/types/auth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Shield } from "lucide-react";
+import AccessDenied from "@/components/auth/AccessDenied";
+import { PATHS } from "@/routes/paths";
+import { ACCESS_DENIED_FLAG } from "./accessDeniedFlag";
 
 interface RoleGuardProps {
   children: ReactNode;
@@ -39,7 +41,8 @@ interface RoleGuardProps {
   accessDeniedComponent?: ReactNode;
 
   /**
-   * Backend verification function
+   * Backend verification function (kept for call-site compatibility; the
+   * role comes from /auth/me since jwt-authentication phase 9.3)
    */
   backendVerify?: () => Promise<{
     user: {
@@ -58,44 +61,27 @@ interface RoleGuardProps {
 }
 
 /**
- * Unified route guard component that replaces RecruiterRoute and AdminRoute.
- *
- * @example
- * // Protect route for recruiters only
- * <RoleGuard requiredRoles={[UserRole.RECRUITER]}>
- *   <RecruiterDashboard />
- * </RoleGuard>
- *
- * @example
- * // Protect route for admins only
- * <RoleGuard
- *   requiredRoles={[UserRole.ADMIN, UserRole.SUPERADMIN]}
- *   backendVerify={getAdminMe}
- * >
- *   <AdminPanel />
- * </RoleGuard>
- *
- * @example
- * // Protect route with permission check
- * <RoleGuard requiredPermissions={[Permission.MANAGE_USERS]}>
- *   <UserManagement />
- * </RoleGuard>
+ * Route guard for this admin app. Defaults to admin/superadmin via useRoleAuth.
+ * Guests are sent to sign-in; a JWT session with any other Mongo role is
+ * signed out and bounced to sign-in with a generic message.
  */
 export const RoleGuard: React.FC<RoleGuardProps> = ({
   children,
-  requiredRoles,
+  requiredRoles = [UserRole.ADMIN, UserRole.SUPERADMIN],
   requiredPermissions,
-  redirectTo = "/sign-in",
+  redirectTo = PATHS.SIGN_IN,
   loadingComponent,
   accessDeniedComponent,
   backendVerify,
   showAccessDenied = true,
 }) => {
   const location = useLocation();
-  const { hasRole, checking, user, error, isPendingBackendSync } = useRoleAuth({
-    requiredRoles,
-    backendVerify,
-  });
+  const { hasRole, checking, user, error, isWrongJwtRole, isUnauthenticated } =
+    useRoleAuth({
+      requiredRoles,
+      backendVerify,
+    });
+  const { signOut } = useAuth();
 
   // Check permissions if required
   const hasRequiredPermissions = React.useMemo(() => {
@@ -126,108 +112,40 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     );
   }
 
-  // Check if user has access
+  // A JWT session whose Mongo role isn't allowed here: sign out and bounce
+  // with a generic message — never render admin children, never leak the
+  // real role, never redirect to another app.
+  if (isWrongJwtRole) {
+    try {
+      sessionStorage.setItem(ACCESS_DENIED_FLAG, "1");
+    } catch {
+      /* ignore storage errors */
+    }
+    signOut().catch(() => {});
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  // No session at all — straight to sign-in.
+  if (isUnauthenticated) {
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
   const hasAccess = hasRole && hasRequiredPermissions;
 
-  // If user doesn't have access (but allow pending users to pass through)
-  if ((!hasAccess || error) && !isPendingBackendSync) {
+  if (!hasAccess) {
     if (showAccessDenied) {
       if (accessDeniedComponent) {
         return <>{accessDeniedComponent}</>;
       }
 
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-6">
-          <div className="max-w-md w-full space-y-6">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle className="mt-2 text-lg font-semibold">
-                Access Denied
-              </AlertTitle>
-              <AlertDescription className="mt-3 space-y-2">
-                <p>
-                  You don't have permission to access this page.
-                  {requiredRoles && requiredRoles.length > 0 && (
-                    <span className="block mt-1 text-sm">
-                      Required role:{" "}
-                      {requiredRoles.map((r) => r.toUpperCase()).join(" or ")}
-                    </span>
-                  )}
-                </p>
-                {error && (
-                  <p className="text-sm mt-2 p-2 bg-destructive/10 rounded">
-                    {error}
-                  </p>
-                )}
-              </AlertDescription>
-            </Alert>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={() => window.history.back()}
-                variant="outline"
-                className="flex-1"
-              >
-                Go Back
-              </Button>
-              <Button
-                onClick={() => (window.location.href = "/")}
-                className="flex-1"
-              >
-                Go Home
-              </Button>
-            </div>
-
-            <p className="text-center text-sm text-muted-foreground">
-              If you believe this is an error, please contact support.
-            </p>
-          </div>
-        </div>
-      );
+      return <AccessDenied message={error ?? undefined} />;
     }
 
-    // Redirect immediately without showing message
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
-  }
-
-  // User has access - render children
-  // Show notification if user is pending backend sync
-  if (isPendingBackendSync) {
-    return (
-      <>
-        <div className="bg-blue-50 dark:bg-blue-950 border-b border-blue-200 dark:border-blue-800 px-4 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-pulse" />
-              <div>
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Setting up your account...
-                </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Your account is being created. This usually takes a few
-                  seconds.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {children}
-      </>
-    );
   }
 
   return <>{children}</>;
 };
-
-// Convenience exports for common use cases
-export const RecruiterGuard: React.FC<{
-  children: ReactNode;
-  backendVerify?: RoleGuardProps["backendVerify"];
-}> = ({ children, backendVerify }) => (
-  <RoleGuard requiredRoles={[UserRole.RECRUITER]} backendVerify={backendVerify}>
-    {children}
-  </RoleGuard>
-);
 
 export const AdminGuard: React.FC<{
   children: ReactNode;

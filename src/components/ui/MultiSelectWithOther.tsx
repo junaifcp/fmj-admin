@@ -95,7 +95,7 @@ const MultiSelectWithOther: React.FC<Props> = ({
     if (!txt) return;
     // replace placeholder token with actual custom string
     const placeholderIndex = local.indexOf("__OTHER_PLACEHOLDER__");
-    let next = [...local];
+    const next = [...local];
     if (placeholderIndex !== -1) {
       next.splice(placeholderIndex, 1, txt);
     } else {

@@ -11,27 +11,12 @@ export const EnvDebug = ({ show = false }: { show?: boolean }) => {
     console.log("🔍 Environment Configuration:", {
       environment: config.env,
       apiBaseUrl: config.apiBaseUrl,
-      clerkPublishableKey: config.clerkPublishableKey
-        ? `${config.clerkPublishableKey.substring(0, 20)}...`
-        : "NOT SET",
-      cashfreeMode: config.cashfreeMode,
+      googleClientId: config.googleClientId ? "SET" : "NOT SET",
       allEnvVars: {
         VITE_ENV: import.meta.env.VITE_ENV,
         VITE_DEV_API_BASE_URL: import.meta.env.VITE_DEV_API_BASE_URL,
         VITE_STAGING_API_BASE_URL: import.meta.env.VITE_STAGING_API_BASE_URL,
         VITE_PROD_API_BASE_URL: import.meta.env.VITE_PROD_API_BASE_URL,
-        VITE_DEV_CLERK_PUBLISHABLE_KEY: import.meta.env
-          .VITE_DEV_CLERK_PUBLISHABLE_KEY
-          ? "SET"
-          : "NOT SET",
-        VITE_STAGING_CLERK_PUBLISHABLE_KEY: import.meta.env
-          .VITE_STAGING_CLERK_PUBLISHABLE_KEY
-          ? "SET"
-          : "NOT SET",
-        VITE_PROD_CLERK_PUBLISHABLE_KEY: import.meta.env
-          .VITE_PROD_CLERK_PUBLISHABLE_KEY
-          ? "SET"
-          : "NOT SET",
       },
     });
   }, []);
@@ -46,26 +31,6 @@ export const EnvDebug = ({ show = false }: { show?: boolean }) => {
       style={{ maxHeight: "400px", overflow: "auto" }}
     >
       <div className="font-bold mb-2 text-yellow-400">⚠️ Debug Mode</div>
-      {/* <div className="space-y-1">
-        <div>
-          <span className="text-gray-400">Environment:</span>{" "}
-          <span className="text-green-400">{config.env}</span>
-        </div>
-        <div>
-          <span className="text-gray-400">API Base URL:</span>{" "}
-          <span className="text-blue-400">
-            {config.apiBaseUrl || "❌ NOT SET"}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-400">Clerk Key:</span>{" "}
-          <span className="text-purple-400">
-            {config.clerkPublishableKey
-              ? `${config.clerkPublishableKey.substring(0, 20)}...`
-              : "❌ NOT SET"}
-          </span>
-        </div>
-      </div> */}
     </div>
   );
 };

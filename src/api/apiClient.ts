@@ -6,6 +6,11 @@ import axios, {
   AxiosRequestConfig,
   AxiosHeaders,
 } from "axios";
+import { getAccessToken, refreshAccessToken } from "@/auth";
+
+interface RetryableConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 /**
  * Async token getter type.
@@ -95,10 +100,35 @@ export const createApiClient = (
   // Response interceptor: normalize errors, call onAuthError for 401
   client.interceptors.response.use(
     (res) => res,
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
       // If axios received a response from server
       if (error.response) {
         const status = error.response.status;
+        const config = error.config as RetryableConfig | undefined;
+
+        // A JWT session gets one refresh-and-retry before falling through to
+        // the onAuthError path.
+        if (
+          status === 401 &&
+          config &&
+          !config._retry &&
+          getAccessToken() &&
+          !(config.url || "").includes("/auth/refresh")
+        ) {
+          try {
+            const newToken = await refreshAccessToken();
+            config._retry = true;
+            const headers =
+              config.headers instanceof AxiosHeaders
+                ? config.headers
+                : new AxiosHeaders(config.headers);
+            headers.set("Authorization", `Bearer ${newToken}`);
+            config.headers = headers;
+            return client(config);
+          } catch {
+            // refresh failed — fall through to onAuthError below
+          }
+        }
 
         // Optional auth error hook
         if (status === 401 && typeof onAuthError === "function") {
@@ -115,8 +145,13 @@ export const createApiClient = (
         const data = error.response.data;
         let message = `HTTP ${status}`;
         try {
-          if (data && typeof data === "object" && "message" in (data as any)) {
-            message = (data as any).message;
+          if (data && typeof data === "object") {
+            const body = data as { message?: unknown; error?: unknown };
+            if (typeof body.message === "string" && body.message.trim()) {
+              message = body.message;
+            } else if (typeof body.error === "string" && body.error.trim()) {
+              message = body.error;
+            }
           } else if (typeof data === "string" && data.trim()) {
             message = data;
           }
@@ -151,18 +186,10 @@ export const createApiClient = (
 };
 
 /**
- * Default getAuthToken that uses window.Clerk.session.getToken() if available.
- * Keep this here as a convenience; in production prefer injecting your stable token getter
+ * Default getAuthToken using the JWT memory token. Keep this here as a
+ * convenience; in production prefer injecting your stable token getter
  * (e.g. the non-hook getAuthToken exported from src/utils/auth.ts).
  */
 export const defaultGetAuthToken: AsyncTokenGetter = async () => {
-  try {
-    if ((window as any).Clerk?.session?.getToken) {
-      return await (window as any).Clerk.session.getToken();
-    }
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("defaultGetAuthToken failed:", err);
-  }
-  return null;
+  return getAccessToken();
 };

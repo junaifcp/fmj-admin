@@ -54,4 +54,19 @@ Phase 1 (distinct port/identity so you can test without mixing recruiter localho
 
 ## Execution plan
 
-To be written before implementation.
+Implemented. Clerk instance: **reuse recruiter Clerk** (admins already live there). Phase 7 must add `http://localhost:8082` and `https://admin.fitmyskill.com` as Clerk allowed origins / redirect URLs.
+
+### What changed
+
+1. `SignInLanding` and `SignInForm` redirect only `admin` / `superadmin` to `/admin`. Other signed-in roles see `AccessDenied` with **Sign out**. No recruiter dashboard redirect. No coupon capture. No sign-up CTA.
+2. `/sign-up` redirects to `/` (SignUpForm is unmounted, file remains until phase 4).
+3. Leftover `/recruiter/*` routes stay mounted until phase 3 but are wrapped in `AdminGuard` + `getAdminMe`, so recruiters cannot enter.
+4. `RoleGuard` sends unsigned users to `/sign-in`. Signed-in non-admins get `AccessDenied` (sign out only).
+5. `useRoleAuth` defaults to admin/superadmin. `useAdminRoleAuth` calls `getAdminMe`. `useRecruiterRoleAuth` removed.
+
+### Verify
+
+- Unsigned `/` shows sign-in with no “Create one” link.
+- `/sign-up` lands on `/`.
+- Recruiter session on this host sees Access Denied, not `/recruiter/dashboard`.
+- Admin session reaches `/admin` (backend `getAdminMe` still required).

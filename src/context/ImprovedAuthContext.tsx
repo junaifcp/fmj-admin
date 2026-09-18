@@ -7,7 +7,6 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useClerk, useUser } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   UserRole,
@@ -16,14 +15,13 @@ import {
   AuthState,
 } from "@/types/auth";
 import {
-  extractRoleFromClerk,
-  extractPermissionsFromClerk,
   getUserPermissions,
   hasRole as checkRole,
   hasPermission as checkPermission,
   hasAnyPermission as checkAnyPermission,
 } from "@/utils/authHelpers";
 import { clearTokenCache } from "@/utils/auth";
+import { useAuth as useJwtAuth } from "@/auth";
 
 interface ImprovedAuthContextType extends AuthState {
   /**
@@ -81,42 +79,24 @@ interface ImprovedAuthProviderProps {
 export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
   children,
 }) => {
-  const { signOut: clerkSignOut } = useClerk();
-  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const jwtAuth = useJwtAuth();
   const queryClient = useQueryClient();
   const [isSigningOut, setIsSigningOut] = React.useState(false);
 
-  // Extract role and permissions from Clerk (with safety checks)
-  const role = React.useMemo(() => {
-    if (!clerkUser) return undefined;
-    return extractRoleFromClerk(
-      clerkUser.publicMetadata,
-      clerkUser.unsafeMetadata
-    );
-  }, [clerkUser]);
+  // JWT (/auth/me) is the only identity source.
+  const role = jwtAuth.user?.role as UserRole | undefined;
+  const permissions = getUserPermissions(role);
 
-  const customPermissions = React.useMemo(() => {
-    if (!clerkUser) return undefined;
-    return extractPermissionsFromClerk(
-      clerkUser.publicMetadata,
-      clerkUser.unsafeMetadata
-    );
-  }, [clerkUser]);
-
-  const permissions = getUserPermissions(role, customPermissions);
-
-  // Build authenticated user object
   const authenticatedUser: AuthenticatedUser | null = useMemo(() => {
-    if (!isSignedIn || !clerkUser || !role) return null;
+    if (!jwtAuth.user || !role) return null;
 
     return {
-      id: clerkUser.id,
-      email: clerkUser.primaryEmailAddress?.emailAddress || "",
+      id: jwtAuth.user._id,
+      email: jwtAuth.user.email,
       role,
-      permissions,
-      clerkUserId: clerkUser.id,
+      permissions: getUserPermissions(role),
     };
-  }, [isSignedIn, clerkUser, role, permissions]);
+  }, [jwtAuth.user, role]);
 
   // Sign out handler
   const handleSignOut = useCallback(async () => {
@@ -126,21 +106,18 @@ export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
       // Cancel all pending queries
       await queryClient.cancelQueries();
 
+      await jwtAuth.signOut();
+
       // Clear all caches
       localStorage.clear();
       sessionStorage.clear();
       queryClient.clear();
-
-      // Clear token cache
       clearTokenCache();
-
-      // Sign out from Clerk
-      await clerkSignOut({ redirectUrl: "/" });
     } catch (err) {
       console.error("Error signing out:", err);
       setIsSigningOut(false);
     }
-  }, [queryClient, clerkSignOut]);
+  }, [queryClient, jwtAuth]);
 
   // Permission checking functions
   const hasRoleFunc = useCallback(
@@ -152,20 +129,16 @@ export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
 
   const hasPermissionFunc = useCallback(
     (...requiredPermissions: Permission[]) => {
-      return checkPermission(role, customPermissions, ...requiredPermissions);
+      return checkPermission(role, undefined, ...requiredPermissions);
     },
-    [role, customPermissions]
+    [role]
   );
 
   const hasAnyPermissionFunc = useCallback(
     (...requiredPermissions: Permission[]) => {
-      return checkAnyPermission(
-        role,
-        customPermissions,
-        ...requiredPermissions
-      );
+      return checkAnyPermission(role, undefined, ...requiredPermissions);
     },
-    [role, customPermissions]
+    [role]
   );
 
   // Build context value with error handling
@@ -173,9 +146,10 @@ export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
     try {
       return {
         user: authenticatedUser,
-        isAuthenticated: !!isSignedIn && !!role,
-        isLoading: !isLoaded,
-        error: isSignedIn && !role ? "No role assigned to user" : null,
+        isAuthenticated: jwtAuth.isAuthenticated,
+        isLoading: jwtAuth.isLoading,
+        error:
+          jwtAuth.isAuthenticated && !role ? "No role assigned to user" : null,
         signOut: handleSignOut,
         hasRole: hasRoleFunc,
         hasPermission: hasPermissionFunc,
@@ -190,7 +164,7 @@ export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
       return {
         user: null,
         isAuthenticated: false,
-        isLoading: !isLoaded,
+        isLoading: jwtAuth.isLoading,
         error: error instanceof Error ? error.message : "Auth context error",
         signOut: handleSignOut,
         hasRole: () => false,
@@ -203,9 +177,9 @@ export const ImprovedAuthProvider: React.FC<ImprovedAuthProviderProps> = ({
     }
   }, [
     authenticatedUser,
-    isSignedIn,
     role,
-    isLoaded,
+    jwtAuth.isAuthenticated,
+    jwtAuth.isLoading,
     handleSignOut,
     hasRoleFunc,
     hasPermissionFunc,

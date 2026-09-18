@@ -2,15 +2,13 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, useLocation } from "react-router-dom";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "@/auth";
 import { ImprovedAuthProvider } from "@/context/ImprovedAuthContext";
 import { AuthDebug } from "@/context/AuthDebug";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { AppRoutes } from "@/routes";
-import { clerkPublishableKey } from "@/config/env";
 import { EnvDebug } from "@/components/debug/EnvDebug";
-import React, { useEffect } from "react";
+import React from "react";
 
 // Simple ErrorBoundary for lazy chunk failures
 class ErrorBoundary extends React.Component<
@@ -58,24 +56,6 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Component to track page views (memoized)
-const PageViewTracker: React.FC = React.memo(() => {
-  const location = useLocation();
-  const { trackPageView } = useAnalytics();
-
-  useEffect(() => {
-    // include pathname + search to capture query params too
-    trackPageView("Page View", {
-      page_path: location.pathname + location.search,
-      page_title: document.title,
-      page_location: window.location.href,
-    });
-  }, [location.pathname, location.search, trackPageView]);
-
-  return null;
-});
-PageViewTracker.displayName = "PageViewTracker";
-
 // Create QueryClient once at module level to prevent re-initialization
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,13 +70,9 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   return (
-    <ClerkProvider
-      publishableKey={
-        clerkPublishableKey || "pk_test_dummy_key_for_development"
-      }
-    >
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
           <AuthDebug>
             <ImprovedAuthProvider>
               <div className="overflow-x-hidden w-full min-h-screen">
@@ -110,7 +86,6 @@ const App: React.FC = () => {
                   }
                 />
                 <BrowserRouter>
-                  <PageViewTracker />
                   <ErrorBoundary>
                     <AppRoutes />
                   </ErrorBoundary>
@@ -118,9 +93,9 @@ const App: React.FC = () => {
               </div>
             </ImprovedAuthProvider>
           </AuthDebug>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 

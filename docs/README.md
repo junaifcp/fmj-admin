@@ -36,13 +36,13 @@ Backend stays `resume-builder-backend`. This split is frontend-only. Admin API r
 | 4 | [phases/04-remove-recruiter-employer-code.md](./phases/04-remove-recruiter-employer-code.md) | Recruiter/employer source is deleted. Admin features still compile and run. |
 | 5 | [phases/05-public-surface-and-branding.md](./phases/05-public-surface-and-branding.md) | Public surface is a private admin sign-in, not an employer marketing site. |
 | 6 | [phases/06-dependencies-and-config.md](./phases/06-dependencies-and-config.md) | Unused packages, env keys, and recruiter config are gone. |
-| 7 | [phases/07-hosting-and-domain.md](./phases/07-hosting-and-domain.md) | App is reachable at admin.fitmyskill.com with Clerk + CORS wired. |
+| 7 | [phases/07-hosting-and-domain.md](./phases/07-hosting-and-domain.md) | App is reachable at admin.fitmyskill.com with JWT auth (OTP + Google) + CORS wired. |
 
 ## Working rules
 
 - Do **not** change `recruiter-frontend` as part of this extraction unless a later phase explicitly needs a redirect/cutover.
 - Do **not** delete admin pages that *manage* recruiters (`/admin/recruiters`, recruiter dashboard). Those are admin tools, not the recruiter product.
-- Do **not** trust Clerk metadata alone for admin access. Keep `getAdminMe` backend verification.
+- Admin access is the Mongo role from JWT `/auth/me` (`admin` | `superadmin`); `getAdminMe` backend verification stays.
 - Do **not** add public sign-up. Admins are provisioned, not self-registered.
 - After deleting files, grep for leftover imports before calling the phase done.
 - Keep `/admin/*` paths in early phases so existing admin links still work. Flattening routes is optional and belongs in phase 7 (or later).
@@ -51,16 +51,16 @@ Backend stays `resume-builder-backend`. This split is frontend-only. Admin API r
 
 | Decision | Default recommendation | Resolve in |
 | --- | --- | --- |
-| Clerk app | Reuse the **recruiter Clerk** instance (admins already live there). Add `admin.fitmyskill.com` as an allowed origin. | Phase 2 / 7 |
+| Auth | **Decided (jwt-authentication 9.x):** JWT email OTP + Google, `portal: 'admin'`; Clerk removed. Add `http://localhost:8082` and `admin.fitmyskill.com` as Google authorized JS origins. | Done |
 | URL prefix | Keep `/admin/*` until the app is stable. Optional flatten to `/` later. | Phase 3 / 7 |
 | Dev port | `8082` so it can run next to recruiter on `8081`. | Phase 1 |
 | Legal/marketing pages | Remove employer terms/pricing/contact from this app. Sign-in + 404 only. | Phase 5 |
-| Sign-up | Disabled. Invite/provision admins in Clerk. | Phase 2 |
+| Sign-up | Disabled. Promote admins via the Users UI (`updateRecruiterRole`); no self-registration. | Phase 2 |
 | Search indexing | `noindex` on admin.fitmyskill.com. | Phase 5 / 7 |
 
 ## Current stack (copied as-is)
 
-Vite + React 18 + TypeScript + Tailwind + shadcn/ui + Clerk + React Query.
+Vite + React 18 + TypeScript + Tailwind + shadcn/ui + JWT (email OTP + Google) + React Query.
 
 - Entry: `src/main.tsx` → `src/App.tsx` → `src/routes/index.tsx`
 - Admin routes: `src/routes/admin.routes.ts` behind `AdminGuard` + `getAdminMe`
