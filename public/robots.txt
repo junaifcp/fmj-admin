@@ -1,0 +1,41 @@
+
+User-agent: *
+Allow: /
+
+# Block sensitive paths
+Disallow: /dashboard/
+Disallow: /editor/
+Disallow: /preview/
+Disallow: /sign-in
+Disallow: /sign-up
+
+# Crawl-delay
+Crawl-delay: 1
+
+# XML Sitemap
+Sitemap: https://resume.fitmyskill.com/sitemap.xml
+
+# Allow common crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
