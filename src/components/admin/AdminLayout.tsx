@@ -67,6 +67,12 @@ const AdminLayout: React.FC = () => {
       icon: BarChart3,
       exact: true,
     },
+    {
+      name: "FitMySkill Data",
+      href: "/admin/candidates/fitmyskill-data",
+      icon: Award,
+      exact: true,
+    },
   ];
 
   const recruiterItems: NavItem[] = [
