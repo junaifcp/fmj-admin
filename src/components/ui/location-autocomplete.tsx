@@ -39,7 +39,12 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     usePlaceAutocomplete();
 
   useEffect(() => {
-    if (value && value !== selectedLocation) {
+    if (!value) {
+      setSelectedLocation(null);
+      setInputValue("");
+      return;
+    }
+    if (value !== selectedLocation) {
       setSelectedLocation(value);
       setInputValue(value.formattedAddress);
     }
