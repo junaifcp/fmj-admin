@@ -5,6 +5,7 @@ import {
   exportUsersCSV,
   getCashfreeOrderDetails,
   activateUserPlan,
+  activateResumePayment,
   getPlans,
 } from "@/api/admin";
 import { AdminUser, PaginationResponse, AdminPlan } from "@/types/admin";
@@ -54,6 +55,7 @@ import {
   ChevronRight,
   Trash2,
   Zap,
+  FileCheck,
   Loader2,
   CheckCircle,
   XCircle,
@@ -94,6 +96,17 @@ const UsersPage: React.FC = () => {
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [activatingPlan, setActivatingPlan] = useState(false);
   const [activationResult, setActivationResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  const [isResumePaymentModalOpen, setIsResumePaymentModalOpen] =
+    useState(false);
+  const [resumePlans, setResumePlans] = useState<AdminPlan[]>([]);
+  const [resumePlanId, setResumePlanId] = useState("");
+  const [loadingResumePlans, setLoadingResumePlans] = useState(false);
+  const [activatingResume, setActivatingResume] = useState(false);
+  const [resumeActivationResult, setResumeActivationResult] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
@@ -315,6 +328,78 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleOpenResumePayment = async (user: AdminUser) => {
+    setSelectedUser(user);
+    setResumePlanId("");
+    setResumeActivationResult(null);
+    setIsResumePaymentModalOpen(true);
+
+    if (resumePlans.length > 0) return;
+
+    try {
+      setLoadingResumePlans(true);
+      const plans = await getPlans();
+      setResumePlans(Array.isArray(plans) ? plans : []);
+    } catch (error) {
+      toast({
+        title: "Failed to load plans",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingResumePlans(false);
+    }
+  };
+
+  const handleActivateResumePayment = async () => {
+    if (!selectedUser || !resumePlanId) {
+      toast({
+        title: "Missing information",
+        description: "Please select a plan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setActivatingResume(true);
+      setResumeActivationResult(null);
+
+      await activateResumePayment(selectedUser._id, resumePlanId);
+
+      setResumeActivationResult({
+        success: true,
+        message: "Resume payment activated",
+      });
+
+      toast({
+        title: "Resume payment activated",
+        description: `PDF access is on for ${selectedUser.email}`,
+      });
+
+      setTimeout(() => {
+        fetchUsers(currentPage, search, hasActiveFilters);
+        setIsResumePaymentModalOpen(false);
+      }, 1200);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to activate resume payment";
+      setResumeActivationResult({
+        success: false,
+        message: errorMessage,
+      });
+      toast({
+        title: "Activation failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setActivatingResume(false);
+    }
+  };
+
   const formatRupees = (paise: number) => {
     const amount = Number(paise || 0) / 100;
     return new Intl.NumberFormat("en-IN", {
@@ -474,6 +559,7 @@ const UsersPage: React.FC = () => {
                     </TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Subscription</TableHead>
+                    <TableHead>Resume access</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -535,6 +621,25 @@ const UsersPage: React.FC = () => {
                           <span className="text-muted-foreground">No Plan</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {user.access?.resume?.status === "active" ? (
+                          <div className="flex flex-col space-y-1">
+                            <Badge>Active</Badge>
+                            {user.access.resume.planName && (
+                              <span className="text-xs text-muted-foreground">
+                                {user.access.resume.planName}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {user.access.resume.endDate
+                                ? `Until ${new Date(user.access.resume.endDate).toLocaleDateString()}`
+                                : "No expiry"}
+                            </span>
+                          </div>
+                        ) : (
+                          <Badge variant="outline">Inactive</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {user.createdAt
                           ? new Date(user.createdAt).toLocaleDateString()
@@ -550,6 +655,15 @@ const UsersPage: React.FC = () => {
                           >
                             <Zap className="h-4 w-4 mr-1" />
                             Activate Plan
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenResumePayment(user)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <FileCheck className="h-4 w-4 mr-1" />
+                            Activate resume payment
                           </Button>
                           <Button
                             variant="outline"
@@ -847,6 +961,97 @@ const UsersPage: React.FC = () => {
                       <XCircle className="h-4 w-4" />
                     )}
                     <span>{activationResult.message}</span>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isResumePaymentModalOpen}
+        onOpenChange={setIsResumePaymentModalOpen}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Activate resume payment</DialogTitle>
+            <DialogDescription>
+              {selectedUser && (
+                <>
+                  Grants PDF download for <strong>{selectedUser.email}</strong>
+                  {selectedUser.firstName && (
+                    <>
+                      {" "}
+                      ({selectedUser.firstName} {selectedUser.lastName})
+                    </>
+                  )}
+                  . Jobs and mentor stay as they are.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="resumePlan">Select plan</Label>
+              {loadingResumePlans ? (
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading plans...</span>
+                </div>
+              ) : (
+                <Select value={resumePlanId} onValueChange={setResumePlanId}>
+                  <SelectTrigger id="resumePlan">
+                    <SelectValue placeholder="Choose a plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {resumePlans.map((plan) => (
+                      <SelectItem key={plan._id} value={plan._id}>
+                        {plan.name} - {formatRupees(plan.price)} (
+                        {plan.durationMonths > 0
+                          ? `${plan.durationMonths} months`
+                          : "no expiry"}
+                        )
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <Button
+              onClick={handleActivateResumePayment}
+              disabled={activatingResume || !resumePlanId}
+              className="w-full"
+            >
+              {activatingResume ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Activating...
+                </>
+              ) : (
+                <>
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  Activate resume payment
+                </>
+              )}
+            </Button>
+
+            {resumeActivationResult && (
+              <Alert
+                variant={
+                  resumeActivationResult.success ? "default" : "destructive"
+                }
+              >
+                <AlertDescription>
+                  <div className="flex items-center space-x-2">
+                    {resumeActivationResult.success ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    <span>{resumeActivationResult.message}</span>
                   </div>
                 </AlertDescription>
               </Alert>

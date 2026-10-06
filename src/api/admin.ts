@@ -833,6 +833,24 @@ export const activateUserPlan = async (
   );
 };
 
+export const activateResumePayment = async (
+  userId: string,
+  planId: string,
+  opts?: { signal?: AbortSignal; token?: string }
+): Promise<{
+  resume: {
+    status: "active";
+    source: "admin";
+    planId: string;
+    planName: string;
+    orderId: null;
+    startDate: string;
+    endDate: string | null;
+  };
+}> => {
+  return post(`/users/${userId}/resume-access`, { planId }, opts);
+};
+
 // ========================
 // Support Tickets
 // ========================
