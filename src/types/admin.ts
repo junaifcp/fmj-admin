@@ -27,6 +27,23 @@ export interface AdminUser {
     endDate?: string;
     amount?: number;
   };
+  access?: {
+    resume?: {
+      status?: "inactive" | "active";
+      source?:
+        | "landing"
+        | "download_paywall"
+        | "in_app"
+        | "migration"
+        | "admin"
+        | null;
+      planId?: string | null;
+      planName?: string | null;
+      orderId?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+    };
+  };
   createdAt?: string;
   lastActive?: string;
 }
