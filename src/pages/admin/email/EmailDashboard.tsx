@@ -139,7 +139,7 @@ const EmailDashboard: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               Active Servers
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.active}</div>
@@ -154,7 +154,7 @@ const EmailDashboard: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               Inactive Servers
             </CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.inactive}</div>
@@ -258,7 +258,7 @@ const EmailDashboard: React.FC = () => {
                   <CardTitle className="text-sm font-medium">
                     Success Rate
                   </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <TrendingUp className="h-4 w-4 text-success" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -321,19 +321,19 @@ const EmailDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Delivered</span>
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-success">
                       {analytics.statusBreakdown.delivered}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Failed</span>
-                    <span className="font-medium text-red-600">
+                    <span className="font-medium text-destructive">
                       {analytics.statusBreakdown.failed}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Bounced</span>
-                    <span className="font-medium text-orange-600">
+                    <span className="font-medium text-destructive">
                       {analytics.statusBreakdown.bounced}
                     </span>
                   </div>
@@ -355,7 +355,7 @@ const EmailDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Failed</span>
-                    <span className="font-medium text-red-600">
+                    <span className="font-medium text-destructive">
                       {analytics.recentActivity.failed}
                     </span>
                   </div>

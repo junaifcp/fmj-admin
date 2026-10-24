@@ -57,9 +57,14 @@ const SignInForm: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <div className="flex justify-center mb-2">
-            <div className="flex items-center">
-              <span className="font-mono text-2xl font-bold text-primary mr-2">
-                FitMySkill Admin
+            <div className="flex items-center gap-2">
+              <img
+                src="/images/logo.svg"
+                alt="FitMyJob Logo"
+                className="h-8 w-8 shrink-0"
+              />
+              <span className="font-sans text-2xl font-extrabold text-primary">
+                FitMyJob Admin
               </span>
             </div>
           </div>

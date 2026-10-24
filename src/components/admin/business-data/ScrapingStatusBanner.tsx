@@ -29,8 +29,8 @@ export const ScrapingStatusBanner: React.FC<ScrapingStatusBannerProps> = ({
         isFailed || isCancelled
           ? "border-destructive/50 bg-destructive/10"
           : isCompleted
-          ? "border-green-500/50 bg-green-50 dark:bg-green-900/20"
-          : "border-blue-500/50 bg-blue-50 dark:bg-blue-900/20"
+          ? "border-success/50 bg-success/10"
+          : "border-border bg-info"
       )}
     >
       <div className="container mx-auto px-4 py-3">
@@ -47,8 +47,8 @@ export const ScrapingStatusBanner: React.FC<ScrapingStatusBannerProps> = ({
                   isFailed || isCancelled
                     ? "text-destructive"
                     : isCompleted
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-blue-700 dark:text-blue-300"
+                    ? "text-success"
+                    : "text-info-foreground"
                 )}
               >
                 {isCompleted

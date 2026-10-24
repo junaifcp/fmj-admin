@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { fitmyskillLeadsApi } from "@/api/fitmyskillLeads";
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
+import { VerifiedBadge } from "@/components/shared/VerifiedBadge";
 import type { Location } from "@/types/location";
 import {
   LEAD_FILTER_KEYS,
@@ -796,7 +797,10 @@ const LeadTableRow: React.FC<{
         />
       </TableCell>
       <TableCell className="min-w-[200px]">
-        <div className="font-medium">{row.name || "—"}</div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium">{row.name || "—"}</span>
+          <VerifiedBadge verified={row.identityVerified} />
+        </div>
         {phone && <div className="text-xs text-muted-foreground">{phone}</div>}
         {placeText(row.currentLocation) && (
           <div className="text-xs text-muted-foreground">{placeText(row.currentLocation)}</div>
@@ -954,7 +958,11 @@ const LeadDetailDrawer: React.FC<DrawerProps> = ({
     <Sheet open={candidateId !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>{detail?.name || "Candidate"}</SheetTitle>
+          {/* pr-6 keeps the badge clear of the sheet's close button. */}
+          <div className="flex flex-wrap items-center gap-2 pr-6">
+            <SheetTitle>{detail?.name || "Candidate"}</SheetTitle>
+            <VerifiedBadge verified={detail?.identityVerified} />
+          </div>
           <SheetDescription>Lead details and tracking</SheetDescription>
         </SheetHeader>
 

@@ -132,7 +132,7 @@ const OutsideLinkSubmissionsPage: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-mono font-bold tracking-tight">
+            <h1 className="text-3xl font-sans font-extrabold tracking-tight">
               Submissions
             </h1>
             <p className="text-muted-foreground mt-1">

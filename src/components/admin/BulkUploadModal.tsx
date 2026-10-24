@@ -445,7 +445,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
             </div>
             <div>
               <p className="text-muted-foreground">Succeeded</p>
-              <p className="font-medium text-green-600">{uploadProgress.succeeded}</p>
+              <p className="font-medium text-success">{uploadProgress.succeeded}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Failed</p>
@@ -470,7 +470,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     <div className="space-y-4">
       <div className="text-center space-y-2">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-          <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <CheckCircle2 className="h-6 w-6 text-success" />
         </div>
         <p className="font-medium text-lg">Upload Complete!</p>
       </div>
@@ -479,13 +479,13 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         <>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 rounded-lg bg-muted">
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success">
                 {uploadResult.upsertedCount}
               </p>
               <p className="text-xs text-muted-foreground">Uploaded</p>
             </div>
             <div className="p-3 rounded-lg bg-muted">
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-primary">
                 {uploadResult.createdCount}
               </p>
               <p className="text-xs text-muted-foreground">Created</p>

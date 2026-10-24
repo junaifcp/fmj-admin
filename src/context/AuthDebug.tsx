@@ -21,12 +21,12 @@ export const AuthDebug: React.FC<AuthDebugProps> = ({ children }) => {
             <div className="bg-red-100 border border-red-400 rounded p-4 mb-4">
               <p className="font-mono text-sm text-red-800">{error.message}</p>
             </div>
-            <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-96">
+            <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-96">
               {error.stack}
             </pre>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+              className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded"
             >
               Reload Page
             </button>

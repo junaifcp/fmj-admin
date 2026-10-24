@@ -147,7 +147,7 @@ const Dashboard: React.FC = () => {
 
   if (error && !totals) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -170,11 +170,11 @@ const Dashboard: React.FC = () => {
         "Yesterday";
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-bold tracking-tight">
+          <h1 className="text-3xl font-sans font-extrabold tracking-tight">
             Admin Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -259,7 +259,7 @@ const Dashboard: React.FC = () => {
           newCount={filteredMetrics?.newCandidates || 0}
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-blue-600"
+          iconColor="text-navy-icon"
           filterLabel={currentFilterLabel}
         />
         <MetricCard
@@ -269,7 +269,7 @@ const Dashboard: React.FC = () => {
           newCount={filteredMetrics?.newRecruiters || 0}
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-purple-600"
+          iconColor="text-primary"
           filterLabel={currentFilterLabel}
         />
         <MetricCard
@@ -279,7 +279,7 @@ const Dashboard: React.FC = () => {
           newCount={filteredMetrics?.newEmployers || 0}
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-green-600"
+          iconColor="text-success"
           filterLabel={currentFilterLabel}
         />
       </div>
@@ -293,7 +293,7 @@ const Dashboard: React.FC = () => {
           newCount={filteredMetrics?.newJobs || 0}
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-orange-600"
+          iconColor="text-navy-icon"
           filterLabel={currentFilterLabel}
         />
         <MetricCard
@@ -303,7 +303,7 @@ const Dashboard: React.FC = () => {
           newCount={filteredMetrics?.newResumes || 0}
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-cyan-600"
+          iconColor="text-primary"
           filterLabel={currentFilterLabel}
         />
         <MetricCard
@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
           isLoading={loadingTotals}
           isFiltering={!!filteredMetrics && !loadingFiltered}
           isRevenue={true}
-          iconColor="text-emerald-600"
+          iconColor="text-success"
           filterLabel={currentFilterLabel}
         />
       </div>

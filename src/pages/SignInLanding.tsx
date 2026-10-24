@@ -63,9 +63,16 @@ const SignInLanding: React.FC = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background to-muted/30 px-4 py-12">
       <div className="w-full max-w-md space-y-8 text-center">
         <div className="space-y-2">
-          <h1 className="font-mono text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-            FitMySkill Admin
-          </h1>
+          <div className="flex items-center justify-center gap-3">
+            <img
+              src="/images/logo.svg"
+              alt="FitMyJob Logo"
+              className="h-10 w-10 shrink-0"
+            />
+            <h1 className="font-sans text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
+              FitMyJob Admin
+            </h1>
+          </div>
           <p className="text-sm text-muted-foreground sm:text-base">
             Sign in to the internal administration console.
           </p>

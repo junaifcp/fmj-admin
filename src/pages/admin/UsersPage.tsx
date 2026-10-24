@@ -451,7 +451,7 @@ const UsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-mono font-bold tracking-tight">
+        <h1 className="text-3xl font-sans font-extrabold tracking-tight">
           Users Management
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -651,7 +651,7 @@ const UsersPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleActivatePlan(user)}
-                            className="text-green-600 hover:text-green-700"
+                            className="text-success hover:text-success/80"
                           >
                             <Zap className="h-4 w-4 mr-1" />
                             Activate Plan
@@ -660,7 +660,7 @@ const UsersPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenResumePayment(user)}
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-primary hover:text-primary/80"
                           >
                             <FileCheck className="h-4 w-4 mr-1" />
                             Activate resume payment
@@ -956,7 +956,7 @@ const UsersPage: React.FC = () => {
                 <AlertDescription>
                   <div className="flex items-center space-x-2">
                     {activationResult.success ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                     ) : (
                       <XCircle className="h-4 w-4" />
                     )}
@@ -1047,7 +1047,7 @@ const UsersPage: React.FC = () => {
                 <AlertDescription>
                   <div className="flex items-center space-x-2">
                     {resumeActivationResult.success ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                     ) : (
                       <XCircle className="h-4 w-4" />
                     )}

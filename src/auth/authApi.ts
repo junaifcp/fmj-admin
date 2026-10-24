@@ -42,7 +42,7 @@ export async function loginWithGoogle(idToken: string, portal: string = PORTAL):
 }
 
 export async function logout(): Promise<void> {
-  await authApi.post('/auth/logout');
+  await authApi.post('/auth/logout', { portal: PORTAL });
 }
 
 export async function fetchMe(): Promise<PublicUser> {
@@ -56,7 +56,9 @@ export async function fetchMe(): Promise<PublicUser> {
 // Only refresh.ts calls this internally; exported so refresh.ts can stay a
 // thin single-flight wrapper without re-implementing the unwrap logic.
 export async function requestRefresh(): Promise<string> {
-  const res = await authApi.post<Envelope<{ accessToken: string }>>('/auth/refresh');
+  const res = await authApi.post<Envelope<{ accessToken: string }>>('/auth/refresh', {
+    portal: PORTAL,
+  });
   const token = res.data.data.accessToken;
   setAccessToken(token);
   return token;

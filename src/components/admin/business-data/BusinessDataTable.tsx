@@ -179,7 +179,7 @@ export const BusinessDataTable: React.FC<BusinessDataTableProps> = ({
                       href={business.business.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                      className="flex items-center gap-1 text-sm text-primary hover:underline"
                     >
                       <ExternalLink className="h-3 w-3" />
                       <span className="max-w-[150px] truncate">Visit</span>
@@ -196,7 +196,7 @@ export const BusinessDataTable: React.FC<BusinessDataTableProps> = ({
                         <a
                           key={idx}
                           href={`mailto:${email}`}
-                          className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
                         >
                           <Mail className="h-3 w-3" />
                           <span>{email}</span>

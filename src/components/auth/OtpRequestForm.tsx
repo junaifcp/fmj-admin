@@ -48,7 +48,7 @@ const OtpRequestForm: React.FC<OtpRequestFormProps> = ({
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting || !email.trim()}>
+      <Button type="submit" variant="cta" className="w-full" disabled={isSubmitting || !email.trim()}>
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
