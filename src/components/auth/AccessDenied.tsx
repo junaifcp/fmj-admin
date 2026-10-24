@@ -21,11 +21,11 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({ message }) => {
         <Alert variant="destructive">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle className="mt-2 text-lg font-semibold">
-            FitMySkill Admin — access denied
+            FitMyJob Admin — access denied
           </AlertTitle>
           <AlertDescription className="mt-3 space-y-2">
             <p>
-              This console is for FitMySkill administrators only. Recruiter,
+              This console is for FitMyJob administrators only. Recruiter,
               employer, and candidate accounts cannot sign in here.
             </p>
             {message && (

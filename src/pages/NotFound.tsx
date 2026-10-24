@@ -16,12 +16,19 @@ const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center px-4">
-        <p className="font-mono text-sm font-semibold text-primary mb-3">
-          FitMySkill Admin
-        </p>
-        <h1 className="text-5xl font-mono font-bold mb-4">404</h1>
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <img
+            src="/images/logo.svg"
+            alt="FitMyJob Logo"
+            className="h-6 w-6 shrink-0"
+          />
+          <p className="font-sans text-sm font-semibold text-primary">
+            FitMyJob Admin
+          </p>
+        </div>
+        <h1 className="text-5xl font-sans font-extrabold mb-4">404</h1>
         <p className="text-xl text-muted-foreground mb-8">
-          This page is not part of the FitMySkill Admin console.
+          This page is not part of the FitMyJob Admin console.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg">

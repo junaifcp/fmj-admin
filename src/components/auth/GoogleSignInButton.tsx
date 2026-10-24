@@ -66,6 +66,8 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({ onAuthenticated
       },
     });
 
+    // Clear prior GIS markup so Strict Mode double-init does not stack iframes.
+    containerRef.current.innerHTML = "";
     google.accounts.id.renderButton(containerRef.current, {
       theme: "outline",
       size: "large",

@@ -198,7 +198,7 @@ const OutsideLinksPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-bold tracking-tight">
+          <h1 className="text-3xl font-sans font-extrabold tracking-tight">
             Outside Links Management
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -314,7 +314,7 @@ const OutsideLinksPage: React.FC = () => {
                                 href={item.outsideLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline flex items-center gap-1"
+                                className="text-primary hover:underline flex items-center gap-1"
                               >
                                 <ExternalLink className="h-3 w-3" />
                                 View Link
@@ -336,7 +336,7 @@ const OutsideLinksPage: React.FC = () => {
                                     `/admin/management/outside-links/${item._id}/submissions`
                                   );
                                 }}
-                                className="text-blue-600 hover:underline font-medium"
+                                className="text-primary hover:underline font-medium"
                               >
                                 {item.submissionCount ?? 0}
                               </button>

@@ -64,7 +64,7 @@ const OtpVerifyForm: React.FC<OtpVerifyFormProps> = ({
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting || code.length !== 6}>
+      <Button type="submit" variant="cta" className="w-full" disabled={isSubmitting || code.length !== 6}>
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

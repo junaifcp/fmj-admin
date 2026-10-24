@@ -24,6 +24,8 @@ export interface LeadRow {
   leadStatus?: LeadStatus;
   courseKey?: string | null;
   assignedTo?: { id: string; name: string } | null;
+  /** Candidate verification 7.1: true only when the candidate is verified. */
+  identityVerified?: boolean;
 }
 
 export type CourseKey = "excel" | "payroll" | "claude-ai" | "uae-labour-law";

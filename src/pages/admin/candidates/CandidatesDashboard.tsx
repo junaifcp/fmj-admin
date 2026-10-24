@@ -251,7 +251,7 @@ const CandidatesDashboard: React.FC = () => {
 
   if (error && !overview) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -265,11 +265,11 @@ const CandidatesDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-bold tracking-tight">
+          <h1 className="text-3xl font-sans font-extrabold tracking-tight">
             Candidate Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -352,7 +352,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newCandidates || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-blue-600"
+            iconColor="text-navy-icon"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -362,7 +362,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newProfileCompleted || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-emerald-600"
+            iconColor="text-success"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -372,7 +372,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newSavedJobs || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-teal-600"
+            iconColor="text-primary"
             filterLabel={currentFilterLabel}
           />
         </div>
@@ -389,7 +389,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={0}
             isLoading={loadingOverview}
             isFiltering={false}
-            iconColor="text-green-600"
+            iconColor="text-success"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -399,7 +399,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={0}
             isLoading={loadingOverview}
             isFiltering={false}
-            iconColor="text-blue-600"
+            iconColor="text-navy-icon"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -409,7 +409,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={0}
             isLoading={loadingOverview}
             isFiltering={false}
-            iconColor="text-purple-600"
+            iconColor="text-primary"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -419,7 +419,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={0}
             isLoading={loadingOverview}
             isFiltering={false}
-            iconColor="text-orange-600"
+            iconColor="text-muted-foreground"
             filterLabel={currentFilterLabel}
           />
         </div>
@@ -436,7 +436,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newResumes || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-cyan-600"
+            iconColor="text-navy-icon"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -446,7 +446,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newApplications || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-indigo-600"
+            iconColor="text-primary"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -456,7 +456,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newCoverLetters || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-pink-600"
+            iconColor="text-navy-icon"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -466,7 +466,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newAtsResults || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-yellow-600"
+            iconColor="text-primary"
             filterLabel={currentFilterLabel}
           />
           <MetricCard
@@ -476,7 +476,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newFailedAtsAnalyses || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-red-600"
+            iconColor="text-destructive"
             filterLabel={currentFilterLabel}
           />
         </div>
@@ -493,7 +493,7 @@ const CandidatesDashboard: React.FC = () => {
             newCount={overview?.newSubscriptions || 0}
             isLoading={loadingOverview}
             isFiltering={isFiltering}
-            iconColor="text-emerald-600"
+            iconColor="text-success"
             filterLabel={currentFilterLabel}
           />
         </div>

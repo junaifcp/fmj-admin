@@ -9,7 +9,6 @@ import {
   BarChart3,
   Menu,
   X,
-  Settings,
   LogOut,
   FolderOpen,
   Building,
@@ -25,6 +24,7 @@ import {
   UserX,
   Calendar,
   ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +71,12 @@ const AdminLayout: React.FC = () => {
       name: "FitMySkill Data",
       href: "/admin/candidates/fitmyskill-data",
       icon: Award,
+      exact: true,
+    },
+    {
+      name: "Verification",
+      href: "/admin/candidates/verification",
+      icon: ShieldCheck,
       exact: true,
     },
   ];
@@ -265,21 +271,25 @@ const AdminLayout: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transform transition-transform duration-300 ease-in-out lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-              <Settings className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-mono font-semibold text-lg">Admin Panel</span>
+        <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-2">
+            <img
+              src="/images/logo.svg"
+              alt="FitMyJob Logo"
+              className="h-8 w-8 shrink-0"
+            />
+            <span className="font-sans font-semibold text-lg text-sidebar-foreground">
+              Admin Portal
+            </span>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
+            className="lg:hidden text-sidebar-foreground hover:bg-navy-light hover:text-sidebar-foreground"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -294,8 +304,8 @@ const AdminLayout: React.FC = () => {
             className={cn(
               "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
               isCurrentPath("/admin", true)
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             <LayoutDashboard className="h-4 w-4" />
@@ -316,8 +326,8 @@ const AdminLayout: React.FC = () => {
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors",
                     hasActiveItem
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
                   <div className="flex items-center space-x-3">
@@ -344,8 +354,8 @@ const AdminLayout: React.FC = () => {
                           className={cn(
                             "flex items-center space-x-3 px-6 py-2 rounded-md text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                         >
                           <item.icon className="h-3.5 w-3.5" />
@@ -360,16 +370,19 @@ const AdminLayout: React.FC = () => {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
           <div className="flex items-center space-x-3 mb-3">
-            <div className="h-8 w-8 bg-muted rounded-full flex items-center justify-center">
+            <div className="h-8 w-8 bg-navy-light rounded-full flex items-center justify-center text-sidebar-foreground text-sm font-medium">
               {user?.email?.[0]?.toUpperCase() || "A"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
                 {user?.email}
               </p>
-              <Badge variant="secondary" className="text-xs">
+              <Badge
+                variant="outline"
+                className="text-xs border-sidebar-border text-sidebar-foreground/80 bg-transparent"
+              >
                 {user?.role}
               </Badge>
             </div>
@@ -378,7 +391,7 @@ const AdminLayout: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="w-full justify-start text-muted-foreground"
+            className="w-full justify-start text-sidebar-foreground/70 hover:bg-navy-light hover:text-sidebar-foreground"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
@@ -389,27 +402,22 @@ const AdminLayout: React.FC = () => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between">
+        <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 md:px-6 bg-primary text-primary-foreground">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="lg:hidden text-primary-foreground hover:bg-navy-light hover:text-primary-foreground"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-4 w-4" />
             </Button>
-
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="hidden sm:inline-flex">
-                Admin Dashboard
-              </Badge>
-            </div>
+            <span className="font-semibold">Admin Portal</span>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           <Outlet />
         </main>
       </div>

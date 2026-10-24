@@ -155,7 +155,7 @@ const MultiSelectWithOther: React.FC<Props> = ({
           local.map((item) => (
             <span
               key={item}
-              className="inline-flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-full text-sm"
+              className="inline-flex items-center gap-2 px-2 py-1 bg-muted rounded-full text-sm"
             >
               <span className="max-w-xs truncate">{renderChipLabel(item)}</span>
               <button
@@ -190,7 +190,7 @@ const MultiSelectWithOther: React.FC<Props> = ({
               return (
                 <label
                   key={opt.value}
-                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-accent cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleKnownOption(opt);
@@ -213,7 +213,7 @@ const MultiSelectWithOther: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
-                  {checked && <Check className="h-4 w-4 text-green-600" />}
+                  {checked && <Check className="h-4 w-4 text-success" />}
                 </label>
               );
             })}
@@ -230,7 +230,7 @@ const MultiSelectWithOther: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={confirmOther}
-                  className="px-3 py-2 rounded-md border bg-gray-50"
+                  className="px-3 py-2 rounded-md border bg-muted"
                 >
                   Add
                 </button>

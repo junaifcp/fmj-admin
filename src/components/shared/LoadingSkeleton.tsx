@@ -12,7 +12,7 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   count = 1,
   className,
 }) => {
-  const baseClasses = "animate-pulse bg-gray-200 dark:bg-gray-700 rounded";
+  const baseClasses = "animate-pulse bg-muted rounded";
 
   const variantClasses = {
     card: "h-48 w-full",

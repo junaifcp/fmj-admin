@@ -104,26 +104,26 @@ const AtsResults: React.FC = () => {
   }, [resumeFilter]);
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600";
-    if (score >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (score >= 80) return "text-success";
+    if (score >= 60) return "text-cta-foreground";
+    return "text-destructive";
   };
 
   const getScoreBadge = (score: number) => {
     if (score >= 80)
       return (
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+        <Badge className="bg-success/15 text-success hover:bg-success/15">
           Excellent
         </Badge>
       );
     if (score >= 60)
       return (
-        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+        <Badge className="bg-cta/20 text-cta-foreground hover:bg-cta/20">
           Good
         </Badge>
       );
     return (
-      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+      <Badge className="bg-destructive/15 text-destructive hover:bg-destructive/15">
         Needs Improvement
       </Badge>
     );
@@ -133,35 +133,35 @@ const AtsResults: React.FC = () => {
     switch (status) {
       case "completed":
         return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <Badge className="bg-success/15 text-success hover:bg-success/15">
             <CheckCircle2 className="h-3 w-3 mr-1" />
             Completed
           </Badge>
         );
       case "failed":
         return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+          <Badge className="bg-destructive/15 text-destructive hover:bg-destructive/15">
             <XCircle className="h-3 w-3 mr-1" />
             Failed
           </Badge>
         );
       case "processing":
         return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+          <Badge className="bg-info text-info-foreground hover:bg-info">
             <Clock className="h-3 w-3 mr-1" />
             Processing
           </Badge>
         );
       case "pending":
         return (
-          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+          <Badge className="bg-muted text-muted-foreground hover:bg-muted">
             <AlertCircle className="h-3 w-3 mr-1" />
             Pending
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+          <Badge className="bg-muted text-muted-foreground hover:bg-muted">
             Unknown
           </Badge>
         );
@@ -171,13 +171,13 @@ const AtsResults: React.FC = () => {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "critical":
-        return "border-red-200 bg-red-50";
+        return "border-destructive/30 bg-destructive/10";
       case "important":
-        return "border-yellow-200 bg-yellow-50";
+        return "border-cta/40 bg-cta/10";
       case "suggestion":
-        return "border-blue-200 bg-blue-50";
+        return "border-border bg-info";
       default:
-        return "border-gray-200 bg-gray-50";
+        return "border-border bg-muted";
     }
   };
 
@@ -186,7 +186,7 @@ const AtsResults: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-mono font-bold tracking-tight">
+        <h1 className="text-3xl font-sans font-extrabold tracking-tight">
           ATS Analysis Results
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -233,10 +233,10 @@ const AtsResults: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               High Scores (80+)
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-success">
               {analytics?.highScores || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -248,10 +248,10 @@ const AtsResults: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {analytics?.failed || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -266,7 +266,7 @@ const AtsResults: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -278,7 +278,7 @@ const AtsResults: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Processing</CardTitle>
-            <Clock className="h-4 w-4 text-blue-600" />
+            <Clock className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -290,7 +290,7 @@ const AtsResults: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <AlertCircle className="h-4 w-4 text-gray-600" />
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics?.pending || 0}</div>
@@ -302,10 +302,10 @@ const AtsResults: React.FC = () => {
             <CardTitle className="text-sm font-medium">
               Medium (60-79)
             </CardTitle>
-            <FileText className="h-4 w-4 text-yellow-600" />
+            <FileText className="h-4 w-4 text-navy-icon" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-primary">
               {analytics?.mediumScores || 0}
             </div>
           </CardContent>
@@ -590,7 +590,7 @@ const AtsResults: React.FC = () => {
                     {selectedResult.summary.strengths &&
                       selectedResult.summary.strengths.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-green-700 mb-2">
+                          <h4 className="font-semibold text-success mb-2">
                             Strengths
                           </h4>
                           <ul className="list-disc list-inside space-y-1 text-sm">
@@ -606,7 +606,7 @@ const AtsResults: React.FC = () => {
                     {selectedResult.summary.weaknesses &&
                       selectedResult.summary.weaknesses.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-red-700 mb-2">
+                          <h4 className="font-semibold text-destructive mb-2">
                             Weaknesses
                           </h4>
                           <ul className="list-disc list-inside space-y-1 text-sm">
@@ -622,7 +622,7 @@ const AtsResults: React.FC = () => {
                     {selectedResult.summary.quickWins &&
                       selectedResult.summary.quickWins.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-blue-700 mb-2">
+                          <h4 className="font-semibold text-primary mb-2">
                             Quick Wins
                           </h4>
                           <ul className="list-disc list-inside space-y-1 text-sm">
@@ -638,9 +638,9 @@ const AtsResults: React.FC = () => {
                 )}
 
                 {selectedResult.error && (
-                  <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
-                    <h4 className="font-semibold text-red-700 mb-2">Error</h4>
-                    <p className="text-sm text-red-600">
+                  <div className="p-4 border border-destructive/30 bg-destructive/10 rounded-lg">
+                    <h4 className="font-semibold text-destructive mb-2">Error</h4>
+                    <p className="text-sm text-destructive">
                       {selectedResult.error}
                     </p>
                   </div>
@@ -692,10 +692,10 @@ const AtsResults: React.FC = () => {
                             <Badge
                               className={
                                 item.severity === "critical"
-                                  ? "bg-red-600"
+                                  ? "bg-destructive text-destructive-foreground"
                                   : item.severity === "important"
-                                  ? "bg-yellow-600"
-                                  : "bg-blue-600"
+                                  ? "bg-cta text-cta-foreground"
+                                  : "bg-primary text-primary-foreground"
                               }
                             >
                               {item.severity}
@@ -725,7 +725,7 @@ const AtsResults: React.FC = () => {
                   {selectedResult.presentKeywords &&
                     selectedResult.presentKeywords.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-green-700 mb-2">
+                        <h4 className="font-semibold text-success mb-2">
                           Present Keywords (
                           {selectedResult.presentKeywords.length})
                         </h4>
@@ -734,7 +734,7 @@ const AtsResults: React.FC = () => {
                             (keyword, idx) => (
                               <Badge
                                 key={idx}
-                                className="bg-green-100 text-green-800 hover:bg-green-100"
+                                className="bg-success/15 text-success hover:bg-success/15"
                               >
                                 {keyword}
                               </Badge>
@@ -747,7 +747,7 @@ const AtsResults: React.FC = () => {
                   {selectedResult.missingKeywords &&
                     selectedResult.missingKeywords.length > 0 && (
                       <div>
-                        <h4 className="font-semibold text-red-700 mb-2">
+                        <h4 className="font-semibold text-destructive mb-2">
                           Missing Keywords (
                           {selectedResult.missingKeywords.length})
                         </h4>
@@ -756,7 +756,7 @@ const AtsResults: React.FC = () => {
                             (keyword, idx) => (
                               <Badge
                                 key={idx}
-                                className="bg-red-100 text-red-800 hover:bg-red-100"
+                                className="bg-destructive/15 text-destructive hover:bg-destructive/15"
                               >
                                 {keyword}
                               </Badge>

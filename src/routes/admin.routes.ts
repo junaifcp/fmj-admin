@@ -23,6 +23,9 @@ const CandidatesDashboard = lazy(
 const FitMySkillDataPage = lazy(
   () => import("@/pages/admin/candidates/FitMySkillDataPage")
 );
+const VerificationPage = lazy(
+  () => import("@/pages/admin/candidates/VerificationPage")
+);
 const RecruitersDashboard = lazy(
   () => import("@/pages/admin/recruiters/RecruitersDashboard")
 );
@@ -84,6 +87,10 @@ export const adminLayoutRoutes: RouteConfig = {
     {
       path: "candidates/fitmyskill-data",
       element: FitMySkillDataPage,
+    },
+    {
+      path: "candidates/verification",
+      element: VerificationPage,
     },
     {
       path: "users",

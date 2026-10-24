@@ -106,11 +106,11 @@ const ScheduledEmails: React.FC = () => {
       pending: { variant: "secondary", className: "" },
       processing: {
         variant: "default",
-        className: "bg-blue-600 text-white",
+        className: "bg-primary text-primary-foreground",
       },
       completed: {
         variant: "default",
-        className: "bg-green-600 text-white",
+        className: "bg-success text-success-foreground",
       },
       failed: { variant: "destructive", className: "" },
       cancelled: { variant: "outline", className: "" },
@@ -189,8 +189,8 @@ const ScheduledEmails: React.FC = () => {
                           <div className="space-y-1.5">
                             {/* Sent */}
                             <div className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3 w-3 text-green-600" />
-                              <span className="text-sm font-medium text-green-600">
+                              <CheckCircle2 className="h-3 w-3 text-success" />
+                              <span className="text-sm font-medium text-success">
                                 {scheduler.sentCount || 0}
                               </span>
                               <span className="text-xs text-muted-foreground">
@@ -203,8 +203,8 @@ const ScheduledEmails: React.FC = () => {
                               (scheduler.rejectedCount &&
                                 scheduler.rejectedCount > 0)) && (
                               <div className="flex items-center gap-2">
-                                <Ban className="h-3 w-3 text-orange-600" />
-                                <span className="text-sm font-medium text-orange-600">
+                                <Ban className="h-3 w-3 text-destructive" />
+                                <span className="text-sm font-medium text-destructive">
                                   {scheduler.rejectedRecipients?.length ||
                                     scheduler.rejectedCount ||
                                     0}
@@ -212,7 +212,7 @@ const ScheduledEmails: React.FC = () => {
                                 <span className="text-xs text-muted-foreground">
                                   rejected
                                 </span>
-                                <span className="text-xs text-orange-600 font-medium ml-1">
+                                <span className="text-xs text-destructive font-medium ml-1">
                                   (duplicate)
                                 </span>
                               </div>
@@ -221,8 +221,8 @@ const ScheduledEmails: React.FC = () => {
                             {scheduler.failedCount &&
                               scheduler.failedCount > 0 && (
                                 <div className="flex items-center gap-2">
-                                  <XCircle className="h-3 w-3 text-red-600" />
-                                  <span className="text-sm font-medium text-red-600">
+                                  <XCircle className="h-3 w-3 text-destructive" />
+                                  <span className="text-sm font-medium text-destructive">
                                     {scheduler.failedCount}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
@@ -320,7 +320,7 @@ const ScheduledEmails: React.FC = () => {
                                       (scheduler.rejectedCount &&
                                         scheduler.rejectedCount > 0)) && (
                                       <div
-                                        className="bg-orange-600 h-2 absolute top-0 left-0"
+                                        className="bg-destructive h-2 absolute top-0 left-0"
                                         style={{
                                           width: `${
                                             ((scheduler.rejectedRecipients
@@ -401,7 +401,7 @@ const ScheduledEmails: React.FC = () => {
                               {/* Breakdown with colors */}
                               <div className="flex items-center gap-2 text-xs flex-wrap">
                                 {scheduler.sentCount > 0 && (
-                                  <span className="text-green-600 font-medium">
+                                  <span className="text-success font-medium">
                                     ✓ {scheduler.sentCount} sent
                                   </span>
                                 )}
@@ -409,7 +409,7 @@ const ScheduledEmails: React.FC = () => {
                                   scheduler.rejectedRecipients.length > 0) ||
                                   (scheduler.rejectedCount &&
                                     scheduler.rejectedCount > 0)) && (
-                                  <span className="text-orange-600 font-medium">
+                                  <span className="text-destructive font-medium">
                                     ⚠{" "}
                                     {scheduler.rejectedRecipients?.length ||
                                       scheduler.rejectedCount ||
@@ -418,7 +418,7 @@ const ScheduledEmails: React.FC = () => {
                                   </span>
                                 )}
                                 {scheduler.failedCount > 0 && (
-                                  <span className="text-red-600 font-medium">
+                                  <span className="text-destructive font-medium">
                                     ✗ {scheduler.failedCount} failed
                                   </span>
                                 )}
@@ -438,7 +438,7 @@ const ScheduledEmails: React.FC = () => {
                                 // Show completed status if all emails are processed, regardless of backend status
                                 if (allProcessed) {
                                   return (
-                                    <div className="text-green-600 font-medium flex items-center gap-1 pt-0.5 border-t">
+                                    <div className="text-success font-medium flex items-center gap-1 pt-0.5 border-t">
                                       <CheckCircle2 className="h-3 w-3" />
                                       All {total} processed
                                     </div>
@@ -446,7 +446,7 @@ const ScheduledEmails: React.FC = () => {
                                 }
                                 // Show processing status if not all processed
                                 return (
-                                  <div className="text-blue-600 text-xs flex items-center gap-1 pt-0.5 border-t">
+                                  <div className="text-primary text-xs flex items-center gap-1 pt-0.5 border-t">
                                     <Loader2 className="h-3 w-3 animate-spin" />
                                     Processing ({processed}/{total})...
                                   </div>

@@ -861,11 +861,11 @@ const EmailServersPage: React.FC = () => {
                 </div>
 
                 {formData.provider === "ses" && (
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                  <div className="bg-info border border-border rounded-lg p-4">
+                    <p className="text-sm font-medium text-info-foreground mb-2">
                       AWS SES Setup Instructions:
                     </p>
-                    <ol className="text-xs text-blue-800 dark:text-blue-200 list-decimal list-inside space-y-1">
+                    <ol className="text-xs text-info-foreground list-decimal list-inside space-y-1">
                       <li>Go to AWS SES Console → SMTP Settings</li>
                       <li>Create SMTP credentials (if not already created)</li>
                       <li>
@@ -878,7 +878,7 @@ const EmailServersPage: React.FC = () => {
                         Ensure your "From Email" address is verified in AWS SES
                       </li>
                     </ol>
-                    <div className="mt-3 text-xs text-blue-700 dark:text-blue-300">
+                    <div className="mt-3 text-xs text-info-foreground">
                       <p className="font-medium mb-1">Common SES Endpoints:</p>
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
                         <li>US East: email-smtp.us-east-1.amazonaws.com</li>

@@ -113,11 +113,11 @@ const RecruitersPage: React.FC = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "superadmin":
-        return <Crown className="h-4 w-4 text-yellow-500" />;
+        return <Crown className="h-4 w-4 text-cta" />;
       case "admin":
-        return <Shield className="h-4 w-4 text-blue-500" />;
+        return <Shield className="h-4 w-4 text-primary" />;
       default:
-        return <User className="h-4 w-4 text-gray-500" />;
+        return <User className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -143,7 +143,7 @@ const RecruitersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-mono font-bold tracking-tight">
+        <h1 className="text-3xl font-sans font-extrabold tracking-tight">
           Recruiters Management
         </h1>
         <p className="text-muted-foreground mt-1">

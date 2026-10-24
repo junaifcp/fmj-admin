@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8082,
-    allowedHosts: ["localhost", "127.0.0.1", "admin.fitmyskill.com"],
+    allowedHosts: ["localhost", "127.0.0.1", "admin.fitmyjob.com"],
   },
   plugins: [react()],
   resolve: {

@@ -24,7 +24,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   isLoading,
   isFiltering,
   isRevenue = false,
-  iconColor = "text-blue-600",
+  iconColor = "text-navy-icon",
   filterLabel = "Yesterday",
 }) => {
   const formatValue = (value: number) => {
@@ -60,7 +60,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
         <div className={iconColor}>{icon}</div>
@@ -69,24 +69,24 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         <div className="flex justify-between items-start">
           {/* Left Side: Total Count */}
           <div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-foreground">
               {formatValue(total)}
             </div>
-            <p className="text-xs text-gray-500 mt-1">All time</p>
+            <p className="text-xs text-muted-foreground mt-1">All time</p>
           </div>
 
           {/* Right Side: New Count (if filtering) */}
           {isFiltering ? (
             <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-primary">
                 {formatValue(newCount)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{filterLabel}</p>
+              <p className="text-xs text-muted-foreground mt-1">{filterLabel}</p>
             </div>
           ) : (
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-300">-</div>
-              <p className="text-xs text-gray-400 mt-1">No filter</p>
+              <div className="text-2xl font-bold text-muted-foreground/40">-</div>
+              <p className="text-xs text-muted-foreground mt-1">No filter</p>
             </div>
           )}
         </div>
