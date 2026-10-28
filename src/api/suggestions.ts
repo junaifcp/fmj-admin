@@ -26,6 +26,10 @@ export interface SuggestionItem {
   _id: string;
   name: string;
   verified: "pending" | "verified" | "rejected";
+  /** Skills and job titles 5.3: skill kind, when known. */
+  kind?: string;
+  /** 5.3: the variant the typed text matched (the suggestion is its standard name). */
+  matchedAlias?: string;
 }
 
 /** Helper to unwrap axios response.data with typing */

@@ -153,6 +153,7 @@ interface Draft {
   salaryMax: string;
   skillsHave: SearchOption[];
   skillsHaveMode: "any" | "all";
+  skillsHaveExpand: boolean;
   skillsNotHave: SearchOption[];
   languages: string[];
   educationLevels: string[];
@@ -160,6 +161,7 @@ interface Draft {
   passingYearFrom: string;
   passingYearTo: string;
   workStatuses: string[];
+  currentOccupations: SearchOption[];
   experienceMin: string;
   experienceMax: string;
   currentRadiusPlace: Location | null;
@@ -274,6 +276,11 @@ const OptionSearch: React.FC<OptionSearchProps> = ({
                   }}
                 >
                   {c.label}
+                  {c.matchedAlias && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      matches ‘{c.matchedAlias}’
+                    </span>
+                  )}
                 </button>
               ))
             )}
@@ -467,8 +474,6 @@ interface FilterPanelProps {
   catalog: LeadOptionsCatalog | null;
   catalogError: string | null;
   onRetryCatalog: () => void;
-  jobTitleText: string;
-  setJobTitleText: (v: string) => void;
   onSeen: (option: SearchOption) => void;
   onApply: () => void;
   onClear: () => void;
@@ -481,8 +486,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   catalog,
   catalogError,
   onRetryCatalog,
-  jobTitleText,
-  setJobTitleText,
   onSeen,
   onApply,
   onClear,
@@ -563,6 +566,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               </Button>
             ))}
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              id={`${idPrefix}-skills-expand`}
+              checked={draft.skillsHaveExpand}
+              onCheckedChange={(v) => set("skillsHaveExpand", v === true)}
+            />
+            Include related skills
+          </label>
           <Field label="Skills not have">
             <OptionSearch
               field="skills"
@@ -620,10 +631,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             />
           </Field>
           <Field label="Current job title">
-            <Input
-              value={jobTitleText}
-              placeholder="e.g. Accountant"
-              onChange={(e) => setJobTitleText(e.target.value)}
+            <OptionSearch
+              field="jobTitles"
+              placeholder="Search job titles"
+              selected={draft.currentOccupations}
+              onChange={(v) => set("currentOccupations", v)}
+              onSeen={onSeen}
             />
           </Field>
           <RangeInputs
@@ -1163,6 +1176,7 @@ const FitMySkillDataPage: React.FC = () => {
         salaryMax: p.get("salaryMax") ?? "",
         skillsHave: ids("skillsHave"),
         skillsHaveMode: p.get("skillsHaveMode") === "all" ? "all" : "any",
+        skillsHaveExpand: p.get("skillsHaveExpand") === "true",
         skillsNotHave: ids("skillsNotHave"),
         languages: splitList(p.get("languages")),
         educationLevels: splitList(p.get("educationLevels")),
@@ -1170,6 +1184,7 @@ const FitMySkillDataPage: React.FC = () => {
         passingYearFrom: p.get("passingYearFrom") ?? "",
         passingYearTo: p.get("passingYearTo") ?? "",
         workStatuses: splitList(p.get("workStatuses")),
+        currentOccupations: ids("currentOccupations"),
         experienceMin: p.get("experienceMin") ?? "",
         experienceMax: p.get("experienceMax") ?? "",
         currentRadiusPlace: placeFromParams(p, "current"),
@@ -1234,6 +1249,11 @@ const FitMySkillDataPage: React.FC = () => {
       } else {
         next.delete("skillsHaveMode");
       }
+      if (draft.skillsHave.length > 0 && draft.skillsHaveExpand) {
+        next.set("skillsHaveExpand", "true");
+      } else {
+        next.delete("skillsHaveExpand");
+      }
       setOrDelete(next, "skillsNotHave", ids(draft.skillsNotHave));
       setOrDelete(next, "languages", draft.languages.join(","));
       setOrDelete(next, "educationLevels", draft.educationLevels.join(","));
@@ -1241,6 +1261,7 @@ const FitMySkillDataPage: React.FC = () => {
       setOrDelete(next, "passingYearFrom", draft.passingYearFrom);
       setOrDelete(next, "passingYearTo", draft.passingYearTo);
       setOrDelete(next, "workStatuses", draft.workStatuses.join(","));
+      setOrDelete(next, "currentOccupations", ids(draft.currentOccupations));
       setOrDelete(next, "experienceMin", draft.experienceMin);
       setOrDelete(next, "experienceMax", draft.experienceMax);
       writeRadius(next, "dreamJob", draft.dreamJobRadiusPlace, draft.dreamJobRadiusKm);
@@ -1269,7 +1290,8 @@ const FitMySkillDataPage: React.FC = () => {
     setSheetOpen(false);
   };
 
-  // --- debounced text inputs: search and currentJobTitle write the URL themselves ---
+  // --- debounced text input: search writes the URL itself. (8.3: the current job is an
+  // occupation multi-select; an old currentJobTitle link still filters and shows a chip.) ---
   const useDebouncedParam = (key: string) => {
     const urlValue = params.get(key) ?? "";
     const [text, setText] = useState(urlValue);
@@ -1299,7 +1321,6 @@ const FitMySkillDataPage: React.FC = () => {
     return [text, setText] as const;
   };
   const [searchText, setSearchText] = useDebouncedParam("search");
-  const [jobTitleText, setJobTitleText] = useDebouncedParam("currentJobTitle");
 
   // --- list fetch; a newer request aborts the previous one ---
   const apiParams = useMemo(() => {
@@ -1387,6 +1408,7 @@ const FitMySkillDataPage: React.FC = () => {
         case "gender":
           return fromList(catalog?.genders) ?? value;
         case "dreamJobTitles":
+        case "currentOccupations":
         case "skillsHave":
         case "skillsNotHave":
         case "fieldOfStudyIds":
@@ -1416,7 +1438,10 @@ const FitMySkillDataPage: React.FC = () => {
             if (rest.length) next.set(key, rest.join(","));
             else {
               next.delete(key);
-              if (key === "skillsHave") next.delete("skillsHaveMode");
+              if (key === "skillsHave") {
+                next.delete("skillsHaveMode");
+                next.delete("skillsHaveExpand");
+              }
             }
           },
         })
@@ -1425,7 +1450,15 @@ const FitMySkillDataPage: React.FC = () => {
     listChips("dreamJobTitles", "Dream job");
     listChips("industries", "Industry");
     listChips("skillsHave", params.get("skillsHaveMode") === "all" ? "Has all" : "Has");
+    if (params.get("skillsHave") && params.get("skillsHaveExpand") === "true") {
+      out.push({
+        id: "skillsHaveExpand",
+        label: "Has: with related skills",
+        remove: (next) => next.delete("skillsHaveExpand"),
+      });
+    }
     listChips("skillsNotHave", "Lacks");
+    listChips("currentOccupations", "Current job");
     listChips("languages", "Language");
     listChips("educationLevels", "Education");
     listChips("fieldOfStudyIds", "Stream");
@@ -1691,8 +1724,6 @@ const FitMySkillDataPage: React.FC = () => {
     catalog,
     catalogError,
     onRetryCatalog: () => setCatalogTry((n) => n + 1),
-    jobTitleText,
-    setJobTitleText,
     onSeen,
     onApply: applyDraft,
     onClear: clearAll,

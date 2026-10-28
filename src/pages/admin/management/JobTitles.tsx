@@ -20,6 +20,9 @@ import {
 } from "@/api/admin";
 import { ManagedJobTitle, PaginationResponse } from "@/types/admin";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewQueue } from "@/components/admin/taxonomy/ReviewQueue";
+import { linkColumn, useTaxonomyLinks } from "@/components/admin/taxonomy/LinkBadges";
 
 const JobTitlesPage: React.FC = () => {
   const [data, setData] = useState<PaginationResponse<ManagedJobTitle> | null>(
@@ -35,6 +38,7 @@ const JobTitlesPage: React.FC = () => {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const { toast } = useToast();
+  const links = useTaxonomyLinks("title", data?.data);
 
   const fetchData = useCallback(async (page = 1, searchTerm = "", verified = "") => {
     try {
@@ -155,33 +159,49 @@ const JobTitlesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent>
-          <ManagementTable
-            title="Job Titles"
-            data={data}
-            loading={loading}
-            search={search}
-            onSearchChange={setSearch}
-            onRefresh={() => fetchData(currentPage, search, verifiedFilter)}
-            onPageChange={handlePageChange}
-            currentPage={currentPage}
-            onVerifyToggle={handleVerifyToggle}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onBulkAction={handleBulkAction}
-            onCreate={() => setModalOpen(true)}
-            verifiedFilter={verifiedFilter}
-            onVerifiedFilterChange={setVerifiedFilter}
-            extraActions={
-              <BulkUploadButton
-                onClick={() => setBulkUploadOpen(true)}
-                className="mr-2"
+      <Tabs defaultValue="list">
+        <TabsList>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list">
+          <Card>
+            <CardContent>
+              <ManagementTable
+                title="Job Titles"
+                data={data}
+                loading={loading}
+                search={search}
+                onSearchChange={setSearch}
+                onRefresh={() => fetchData(currentPage, search, verifiedFilter)}
+                onPageChange={handlePageChange}
+                currentPage={currentPage}
+                onVerifyToggle={handleVerifyToggle}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onBulkAction={handleBulkAction}
+                onCreate={() => setModalOpen(true)}
+                verifiedFilter={verifiedFilter}
+                onVerifiedFilterChange={setVerifiedFilter}
+                extraColumns={[linkColumn("title", links)]}
+                extraActions={
+                  <BulkUploadButton
+                    onClick={() => setBulkUploadOpen(true)}
+                    className="mr-2"
+                  />
+                }
               />
-            }
-          />
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="review">
+          <Card>
+            <CardContent className="pt-6">
+              <ReviewQueue type="title" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <CreateEditModal
         isOpen={modalOpen}

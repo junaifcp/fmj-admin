@@ -21,6 +21,12 @@ import {
   OutsideLinkSubmissionAdmin,
   Tag,
   Certificate,
+  TaxonomyRowType,
+  TaxonomyProposalItem,
+  TaxonomyActionResult,
+  TaxonomyRowBrief,
+  TaxonomyLinks,
+  SkillKind,
 } from "@/types/admin";
 
 import { createApiClient } from "./apiClient";
@@ -1912,3 +1918,61 @@ export const createCertificate = async (
   const result = await response.json();
   return result.data ?? result;
 };
+
+// Skills and job titles 4.4 — review queue (/api/admin/taxonomy)
+export interface TaxonomyQueueParams {
+  type: TaxonomyRowType;
+  status?: string;
+  action?: string;
+  filter?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+export const getTaxonomyProposals = (
+  params: TaxonomyQueueParams,
+  opts?: { signal?: AbortSignal; token?: string }
+) =>
+  get<PaginationResponse<TaxonomyProposalItem>>("/taxonomy/proposals", {
+    ...opts,
+    params,
+  });
+export const approveTaxonomyProposal = (id: string) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/approve`);
+export const rejectTaxonomyProposal = (id: string) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/reject`);
+export const repointTaxonomyProposal = (id: string, targetIds: string[]) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/repoint`, {
+    targetIds,
+  });
+export const makeStandardTaxonomyProposal = (id: string, kind?: SkillKind) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/new`, { kind });
+export const bulkTaxonomyProposals = (
+  ids: string[],
+  action: "approve" | "reject"
+) =>
+  post<TaxonomyActionResult<{ id: string; ok: boolean; error?: string }[]>>(
+    "/taxonomy/proposals/bulk",
+    { ids, action }
+  );
+export const addTaxonomyNeverMerge = (
+  type: TaxonomyRowType,
+  aId: string,
+  bId: string
+) =>
+  post<TaxonomyActionResult<{ ruleAdded: boolean; undone: string[] }>>(
+    "/taxonomy/never-merge",
+    { type, aId, bId }
+  );
+export const setTaxonomySkillKind = (rowId: string, kind: SkillKind) =>
+  post<TaxonomyActionResult>(`/taxonomy/rows/${rowId}/kind`, { kind });
+export const searchTaxonomyTargets = (
+  type: TaxonomyRowType,
+  q: string,
+  opts?: { signal?: AbortSignal }
+) =>
+  get<TaxonomyRowBrief[]>("/taxonomy/targets", { ...opts, params: { type, q } });
+export const getTaxonomyLinks = (type: TaxonomyRowType, ids: string[]) =>
+  get<TaxonomyLinks>("/taxonomy/links", {
+    params: { type, ids: ids.join(",") },
+  });

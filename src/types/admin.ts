@@ -207,6 +207,60 @@ export interface ManagedItem {
 
 export type ManagedSkill = ManagedItem;
 export type ManagedJobTitle = ManagedItem;
+
+// Skills and job titles 4.4 — the review queue on Management → Skills / Job Titles.
+export type TaxonomyRowType = "skill" | "title";
+export type SkillKind = "hard" | "tool" | "soft" | "language" | "certification";
+export type ProposalStatus = "open" | "auto" | "approved" | "rejected";
+export type ProposalAction = "alias" | "split" | "new" | "title" | "skill";
+
+export interface TaxonomyRowBrief {
+  id: string;
+  name: string;
+  verified?: "pending" | "verified" | "rejected";
+  origin?: string;
+  canonical?: boolean;
+  kind?: string;
+  isco?: string;
+  aliasOf?: string;
+  aliasOfName?: string;
+  splitCount?: number;
+  listed?: boolean;
+}
+
+export interface TaxonomyProposalItem {
+  id: string;
+  type: TaxonomyRowType;
+  action: ProposalAction;
+  status: ProposalStatus;
+  reason: string;
+  promptVersion: string | null;
+  score: number | null;
+  judge: { answer: string; optionId?: string | null; reason: string } | null;
+  seniority?: string;
+  parts?: { title?: string; occupation?: string; seniority?: string; specialty?: string }[];
+  createdAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  row: TaxonomyRowBrief;
+  targetType: TaxonomyRowType;
+  targets: TaxonomyRowBrief[];
+  references: number;
+  /** What Approve needs: a pick (several or no targets), or nothing. */
+  needs: "none" | "choice" | "kind";
+}
+
+export interface TaxonomyActionResult<T = unknown> {
+  batchId: string;
+  changeLogRows: number;
+  warnings: string[];
+  result: T;
+}
+
+export type TaxonomyLinks = Record<
+  string,
+  { aliasOf?: { id: string; name: string }; splitCount?: number }
+>;
 export type ManagedQualification = ManagedItem;
 
 export interface ManagedCompany {
