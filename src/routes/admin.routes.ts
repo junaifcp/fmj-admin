@@ -1,71 +1,88 @@
 // src/routes/admin.routes.ts
-import { lazy } from "react";
+import { lazyWithReload } from "./lazyWithReload";
 import { RouteConfig } from "./types";
+import { LEGACY_REDIRECTS } from "./paths";
+import { redirectWithQuery } from "@/components/routing/RedirectWithQuery";
 
 // Lazy load admin pages with prefetch hints
-const AdminLayout = lazy(
+const AdminLayout = lazyWithReload(
   () => import(/* webpackPrefetch: true */ "@/components/admin/AdminLayout")
 );
-const AdminDashboard = lazy(
+const AdminDashboard = lazyWithReload(
   () => import(/* webpackPrefetch: true */ "@/pages/admin/Dashboard")
 );
-const AdminUsers = lazy(() => import("@/pages/admin/UsersPage"));
-const AdminRecruiters = lazy(() => import("@/pages/admin/RecruitersPage"));
-const AdminResumes = lazy(() => import("@/pages/admin/ResumesPage"));
-const AdminPlans = lazy(() => import("@/pages/admin/PlansPage"));
-const AdminMessages = lazy(() => import("@/pages/admin/ContactMessages"));
-const AdminAtsResults = lazy(() => import("@/pages/admin/AtsResults"));
+const AdminUsers = lazyWithReload(() => import("@/pages/admin/UsersPage"));
+const AdminRecruiters = lazyWithReload(() => import("@/pages/admin/RecruitersPage"));
+const AdminResumes = lazyWithReload(() => import("@/pages/admin/ResumesPage"));
+const AdminPlans = lazyWithReload(() => import("@/pages/admin/PlansPage"));
+const AdminMessages = lazyWithReload(() => import("@/pages/admin/ContactMessages"));
+const AdminAtsResults = lazyWithReload(() => import("@/pages/admin/AtsResults"));
 
 // Dashboard routes
-const CandidatesDashboard = lazy(
+const CandidatesDashboard = lazyWithReload(
   () => import("@/pages/admin/candidates/CandidatesDashboard")
 );
-const FitMySkillDataPage = lazy(
+const FitMySkillDataPage = lazyWithReload(
   () => import("@/pages/admin/candidates/FitMySkillDataPage")
 );
-const VerificationPage = lazy(
+const VerificationPage = lazyWithReload(
   () => import("@/pages/admin/candidates/VerificationPage")
 );
-const RecruitersDashboard = lazy(
-  () => import("@/pages/admin/recruiters/RecruitersDashboard")
+const RecruitersOverview = lazyWithReload(
+  () => import("@/pages/admin/recruiters/RecruitersOverview")
+);
+const RecruiterDetail = lazyWithReload(() => import("@/pages/admin/recruiters/RecruiterDetail"));
+const RecruitersDashboardRedirect = lazyWithReload(
+  () => import("@/pages/admin/recruiters/RecruitersDashboardRedirect")
 );
 
 // Management routes
-const JobTitles = lazy(() => import("@/pages/admin/management/JobTitles"));
-const Skills = lazy(() => import("@/pages/admin/management/Skills"));
-const Qualifications = lazy(
+const JobTitles = lazyWithReload(() => import("@/pages/admin/management/JobTitles"));
+const Skills = lazyWithReload(() => import("@/pages/admin/management/Skills"));
+const Qualifications = lazyWithReload(
   () => import("@/pages/admin/management/Qualifications")
 );
-const ManagementCompanies = lazy(
-  () => import("@/pages/admin/management/Companies")
-);
-const BusinessDataPage = lazy(
+const RecruiterCompanies = lazyWithReload(() => import("@/pages/admin/recruiters/Companies"));
+const RecruiterJobs = lazyWithReload(() => import("@/pages/admin/recruiters/Jobs"));
+const RecruiterJobDesk = lazyWithReload(() => import("@/pages/admin/recruiters/JobDesk"));
+const RecruiterApplications = lazyWithReload(() => import("@/pages/admin/recruiters/Applications"));
+const RecruiterActivityLog = lazyWithReload(() => import("@/pages/admin/recruiters/ActivityLog"));
+const RecruiterEmployerInvites = lazyWithReload(() => import("@/pages/admin/recruiters/EmployerInvites"));
+const EmployersOverview = lazyWithReload(() => import("@/pages/admin/employers/EmployersOverview"));
+const EmployersPage = lazyWithReload(() => import("@/pages/admin/employers/EmployersPage"));
+const EmployerDetail = lazyWithReload(() => import("@/pages/admin/employers/EmployerDetail"));
+const EmployersFunnel = lazyWithReload(() => import("@/pages/admin/employers/Funnel"));
+const EmployersCvDrops = lazyWithReload(() => import("@/pages/admin/employers/CvDrops"));
+const EmployersCareerPages = lazyWithReload(() => import("@/pages/admin/employers/CareerPages"));
+const EmployersWhatsapp = lazyWithReload(() => import("@/pages/admin/employers/Whatsapp"));
+const EmployersPayments = lazyWithReload(() => import("@/pages/admin/employers/Payments"));
+const BusinessDataPage = lazyWithReload(
   () => import("@/pages/admin/management/BusinessData")
 );
-const SupportTicketsPage = lazy(
+const SupportTicketsPage = lazyWithReload(
   () => import("@/pages/admin/SupportTicketsPage")
 );
-const OutsideLinks = lazy(
+const OutsideLinks = lazyWithReload(
   () => import("@/pages/admin/management/OutsideLinks")
 );
-const OutsideLinkSubmissionsPage = lazy(
+const OutsideLinkSubmissionsPage = lazyWithReload(
   () => import("@/pages/admin/management/OutsideLinkSubmissionsPage")
 );
-const Tags = lazy(() => import("@/pages/admin/management/Tags"));
-const Certificates = lazy(
+const Tags = lazyWithReload(() => import("@/pages/admin/management/Tags"));
+const Certificates = lazyWithReload(
   () => import("@/pages/admin/management/Certificates")
 );
 
 // Email management routes
-const EmailDashboard = lazy(() => import("@/pages/admin/email/EmailDashboard"));
-const EmailServers = lazy(() => import("@/pages/admin/email/EmailServers"));
-const EmailTemplates = lazy(() => import("@/pages/admin/email/EmailTemplates"));
-const TemplateEditor = lazy(() => import("@/pages/admin/email/TemplateEditor"));
-const SendEmail = lazy(() => import("@/pages/admin/email/SendEmail"));
-const UnsubscribeManagement = lazy(
+const EmailDashboard = lazyWithReload(() => import("@/pages/admin/email/EmailDashboard"));
+const EmailServers = lazyWithReload(() => import("@/pages/admin/email/EmailServers"));
+const EmailTemplates = lazyWithReload(() => import("@/pages/admin/email/EmailTemplates"));
+const TemplateEditor = lazyWithReload(() => import("@/pages/admin/email/TemplateEditor"));
+const SendEmail = lazyWithReload(() => import("@/pages/admin/email/SendEmail"));
+const UnsubscribeManagement = lazyWithReload(
   () => import("@/pages/admin/email/UnsubscribeManagement")
 );
-const ScheduledEmails = lazy(
+const ScheduledEmails = lazyWithReload(
   () => import("@/pages/admin/email/ScheduledEmails")
 );
 
@@ -110,12 +127,81 @@ export const adminLayoutRoutes: RouteConfig = {
     },
     // Recruiters sub-routes
     {
+      path: "recruiters/overview",
+      element: RecruitersOverview,
+    },
+    {
       path: "recruiters/dashboard",
-      element: RecruitersDashboard,
+      element: RecruitersDashboardRedirect,
     },
     {
       path: "recruiters",
       element: AdminRecruiters,
+    },
+    // Employer admin 4.1: old Recruiters/Management URLs keep working.
+    ...LEGACY_REDIRECTS.map(({ from, to }) => ({ path: from, element: redirectWithQuery(to) })),
+    // Employers section (employer admin). Job Desk moved here in 4.1.
+    {
+      path: "employers/overview",
+      element: EmployersOverview,
+    },
+    {
+      path: "employers/job-desk",
+      element: RecruiterJobDesk,
+    },
+    {
+      path: "employers/funnel",
+      element: EmployersFunnel,
+    },
+    {
+      path: "employers/cv-drops",
+      element: EmployersCvDrops,
+    },
+    {
+      path: "employers/career-pages",
+      element: EmployersCareerPages,
+    },
+    {
+      path: "employers/whatsapp",
+      element: EmployersWhatsapp,
+    },
+    {
+      path: "employers/payments",
+      element: EmployersPayments,
+    },
+    {
+      path: "employers",
+      element: EmployersPage,
+    },
+    // Must stay after the fixed employers/* paths above.
+    {
+      path: "employers/:id",
+      element: EmployerDetail,
+    },
+    // Hiring section shared by recruiters and employers (employer admin 4.1).
+    {
+      path: "hiring/companies",
+      element: RecruiterCompanies,
+    },
+    {
+      path: "hiring/jobs",
+      element: RecruiterJobs,
+    },
+    {
+      path: "hiring/applications",
+      element: RecruiterApplications,
+    },
+    {
+      path: "hiring/activity",
+      element: RecruiterActivityLog,
+    },
+    {
+      path: "recruiters/employer-invites",
+      element: RecruiterEmployerInvites,
+    },
+    {
+      path: "recruiters/:id",
+      element: RecruiterDetail,
     },
     // Messages
     {
@@ -134,10 +220,6 @@ export const adminLayoutRoutes: RouteConfig = {
     {
       path: "management/qualifications",
       element: Qualifications,
-    },
-    {
-      path: "management/companies",
-      element: ManagementCompanies,
     },
     {
       path: "management/business-data",

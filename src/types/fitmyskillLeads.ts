@@ -119,6 +119,8 @@ export type OptionSearchField = "skills" | "jobTitles" | "streams";
 export interface SearchOption {
   id: string;
   label: string;
+  /** Skills and job titles 5.3 / 8.3: the variant the typed text matched (e.g. "Tally ERP 9"). */
+  matchedAlias?: string;
 }
 
 export type LeadSort = "lastActive" | "signup" | "experience" | "name";
@@ -134,12 +136,14 @@ export const LEAD_LIST_ARRAY_KEYS = [
   "fieldOfStudyIds",
   "workStatuses",
   "leadStatuses",
+  "currentOccupations", // 8.3: occupation ids of the current job
 ] as const;
 
 export const LEAD_LIST_SCALAR_KEYS = [
   "salaryMin",
   "salaryMax",
   "skillsHaveMode",
+  "skillsHaveExpand", // 8.3: "true" includes children and related skills
   "passingYearFrom",
   "passingYearTo",
   "currentJobTitle",

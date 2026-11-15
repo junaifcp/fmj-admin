@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { PATHS } from '@/routes/paths';
 import { getContactMessages, getContactMessage, deleteContactMessage } from '@/api/admin';
 import { AdminContactMessage, PaginationResponse } from '@/types/admin';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +26,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ContactMessages: React.FC = () => {
   const [messages, setMessages] = useState<PaginationResponse<AdminContactMessage> | null>(null);
@@ -31,13 +34,15 @@ const ContactMessages: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  // Recruiter admin 10.1: which app sent the message. "all" = every source.
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   
   const { toast } = useToast();
 
   const fetchMessages = async (page = 1) => {
     try {
       setLoading(true);
-      const data = await getContactMessages(page, 20);
+      const data = await getContactMessages(page, 20, sourceFilter === 'all' ? '' : sourceFilter);
       setMessages(data);
     } catch (err) {
       toast({
@@ -65,8 +70,10 @@ const ContactMessages: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMessages();
-  }, []);
+    setCurrentPage(1);
+    fetchMessages(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceFilter]);
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
@@ -125,14 +132,27 @@ const ContactMessages: React.FC = () => {
                 {messages ? `${messages.pagination.total} total messages` : 'Loading messages...'}
               </CardDescription>
             </div>
-            <Button
-              onClick={() => fetchMessages(currentPage)}
-              size="sm"
-              variant="outline"
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-40" aria-label="Source">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sources</SelectItem>
+                  <SelectItem value="candidate">Candidates</SelectItem>
+                  <SelectItem value="recruiter">Recruiters</SelectItem>
+                  <SelectItem value="employer">Employers</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => fetchMessages(currentPage)}
+                size="sm"
+                variant="outline"
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         
@@ -169,6 +189,17 @@ const ContactMessages: React.FC = () => {
                         <div>
                           <div className="font-medium">{message.name}</div>
                           <div className="text-sm text-muted-foreground">{message.email}</div>
+                          <Badge variant="outline" className="mt-1 capitalize text-[11px]">
+                            {message.source ?? 'candidate'}
+                          </Badge>
+                          {message.employerUserId && (
+                            <Link
+                              to={`${PATHS.ADMIN.EMPLOYERS_ADMIN.LIST}/${message.employerUserId}`}
+                              className="ml-2 text-xs text-primary hover:underline"
+                            >
+                              View employer
+                            </Link>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>

@@ -155,7 +155,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                               : "opacity-0"
                           )}
                         />
-                        <span>{suggestion.name}</span>
+                        <span className="flex flex-col">
+                          <span>{suggestion.name}</span>
+                          {suggestion.matchedAlias && (
+                            <span className="text-xs text-muted-foreground">
+                              matches ‘{suggestion.matchedAlias}’
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         {getVerificationIcon(suggestion.verified)}

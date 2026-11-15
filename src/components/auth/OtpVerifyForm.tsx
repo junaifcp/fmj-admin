@@ -42,6 +42,9 @@ const OtpVerifyForm: React.FC<OtpVerifyFormProps> = ({
       <p className="text-sm text-muted-foreground">
         If the email is eligible, a code was sent to <strong>{email}</strong>.
       </p>
+      <p className="text-sm text-muted-foreground">
+        Can't find it? Check your spam or junk folder.
+      </p>
 
       <div className="flex justify-center">
         <InputOTP

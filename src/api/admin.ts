@@ -11,8 +11,6 @@ import {
   ManagedSkill,
   ManagedJobTitle,
   ManagedQualification,
-  ManagedCompany,
-  AdminRecruiter,
   PlanAnalytics,
   DashboardTotals,
   DashboardFiltered,
@@ -21,6 +19,12 @@ import {
   OutsideLinkSubmissionAdmin,
   Tag,
   Certificate,
+  TaxonomyRowType,
+  TaxonomyProposalItem,
+  TaxonomyActionResult,
+  TaxonomyRowBrief,
+  TaxonomyLinks,
+  SkillKind,
 } from "@/types/admin";
 
 import { createApiClient } from "./apiClient";
@@ -447,11 +451,14 @@ export async function getDashboardFilteredMetrics(
 export const getContactMessages = async (
   page = 1,
   limit = 20,
+  /** Recruiter admin 10.1: "" = all; candidate | recruiter | employer */
+  source = "",
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<PaginationResponse<AdminContactMessage>> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
+    ...(source && { source }),
   });
   return get<PaginationResponse<AdminContactMessage>>(
     `/messages?${params.toString()}`,
@@ -505,6 +512,7 @@ const listEndpoint = <T = any>(
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) => {
   const params = new URLSearchParams({
@@ -512,6 +520,8 @@ const listEndpoint = <T = any>(
     limit: limit.toString(),
     ...(search && { search }),
     ...(verified && { verified }),
+    // Recruiter admin 10.1: recruiter | employer | candidate | admin (creator's role)
+    ...(addedBy && { addedBy }),
   });
   return get<PaginationResponse<T>>(`${path}?${params.toString()}`, opts);
 };
@@ -543,6 +553,7 @@ export const getSkills = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedSkill>(
@@ -551,6 +562,7 @@ export const getSkills = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createSkill = (
@@ -589,6 +601,7 @@ export const getJobTitles = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedJobTitle>(
@@ -597,6 +610,7 @@ export const getJobTitles = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createJobTitle = (
@@ -644,6 +658,7 @@ export const getQualifications = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedQualification>(
@@ -652,6 +667,7 @@ export const getQualifications = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createQualification = (
@@ -703,39 +719,15 @@ export const bulkActionQualifications = (
     opts
   );
 
-// Recruiter Management
-export const getRecruiters = (
-  page = 1,
-  limit = 20,
-  search = "",
-  planType = "",
-  status = "",
-  opts?: { signal?: AbortSignal; token?: string }
-) => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(search && { search }),
-    ...(planType && { planType }),
-    ...(status && { status }),
-  });
-  return get<PaginationResponse<AdminRecruiter>>(
-    `/recruiters?${params.toString()}`,
-    opts
-  );
-};
-
-export const getRecruiter = (
-  recruiterId: string,
-  opts?: { signal?: AbortSignal; token?: string }
-) => get<AdminRecruiter>(`/recruiters/${recruiterId}`, opts);
-
+// Recruiter Management (list, detail and actions: see api/recruiterAdmin.ts)
 export const exportRecruitersCSV = async (
   recruiterIds: string[] = [],
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<void> => {
   const params =
-    recruiterIds.length > 0 ? `?ids=${recruiterIds.join(",")}` : "";
+    recruiterIds.length > 0
+      ? `?recruiterIds=${encodeURIComponent(recruiterIds.join(","))}`
+      : "";
   const res = await client.request({
     method: "get",
     url: `/recruiters/export${params}`,
@@ -758,17 +750,6 @@ export const exportRecruitersCSV = async (
     throw new Error(`Export failed: HTTP ${res.status}`);
   }
 };
-
-export const updateRecruiterRole = (
-  recruiterId: string,
-  role: string,
-  opts?: { signal?: AbortSignal; token?: string }
-) =>
-  put<{ success: boolean; user: AdminRecruiter }>(
-    `/recruiters/${recruiterId}/role`,
-    { role },
-    opts
-  );
 
 // Payment/Plan Activation for Users
 const PAYMENT_BASE_URL = `${apiBaseUrl.replace(/\/$/, "")}/payments`;
@@ -1298,6 +1279,16 @@ export interface FilterOptions {
   subscriptionStatus?: "active" | "inactive" | "all";
   lastActiveRange?: { from?: string; to?: string };
   search?: string;
+  /** Recruiter audience only (recruiter admin 10.1). */
+  onboarded?: "true" | "false";
+  /** Recruiter and employer audiences. */
+  companyVerified?: "pending" | "verified" | "rejected";
+  /** Employer audience only (employer admin 11.1). */
+  source?: "ad_landing" | "dashboard" | "invite";
+  channel?: "meta_paid" | "direct";
+  utmCampaign?: string;
+  hasCompany?: "true" | "false";
+  posted?: "true" | "false";
 }
 
 export interface BulkEmailResponse {
@@ -1912,3 +1903,61 @@ export const createCertificate = async (
   const result = await response.json();
   return result.data ?? result;
 };
+
+// Skills and job titles 4.4 — review queue (/api/admin/taxonomy)
+export interface TaxonomyQueueParams {
+  type: TaxonomyRowType;
+  status?: string;
+  action?: string;
+  filter?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+export const getTaxonomyProposals = (
+  params: TaxonomyQueueParams,
+  opts?: { signal?: AbortSignal; token?: string }
+) =>
+  get<PaginationResponse<TaxonomyProposalItem>>("/taxonomy/proposals", {
+    ...opts,
+    params,
+  });
+export const approveTaxonomyProposal = (id: string) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/approve`);
+export const rejectTaxonomyProposal = (id: string) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/reject`);
+export const repointTaxonomyProposal = (id: string, targetIds: string[]) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/repoint`, {
+    targetIds,
+  });
+export const makeStandardTaxonomyProposal = (id: string, kind?: SkillKind) =>
+  post<TaxonomyActionResult>(`/taxonomy/proposals/${id}/new`, { kind });
+export const bulkTaxonomyProposals = (
+  ids: string[],
+  action: "approve" | "reject"
+) =>
+  post<TaxonomyActionResult<{ id: string; ok: boolean; error?: string }[]>>(
+    "/taxonomy/proposals/bulk",
+    { ids, action }
+  );
+export const addTaxonomyNeverMerge = (
+  type: TaxonomyRowType,
+  aId: string,
+  bId: string
+) =>
+  post<TaxonomyActionResult<{ ruleAdded: boolean; undone: string[] }>>(
+    "/taxonomy/never-merge",
+    { type, aId, bId }
+  );
+export const setTaxonomySkillKind = (rowId: string, kind: SkillKind) =>
+  post<TaxonomyActionResult>(`/taxonomy/rows/${rowId}/kind`, { kind });
+export const searchTaxonomyTargets = (
+  type: TaxonomyRowType,
+  q: string,
+  opts?: { signal?: AbortSignal }
+) =>
+  get<TaxonomyRowBrief[]>("/taxonomy/targets", { ...opts, params: { type, q } });
+export const getTaxonomyLinks = (type: TaxonomyRowType, ids: string[]) =>
+  get<TaxonomyLinks>("/taxonomy/links", {
+    params: { type, ids: ids.join(",") },
+  });

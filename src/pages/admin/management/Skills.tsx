@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -20,6 +20,9 @@ import {
 } from "@/api/admin";
 import { ManagedSkill, PaginationResponse } from "@/types/admin";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewQueue } from "@/components/admin/taxonomy/ReviewQueue";
+import { linkColumn, useTaxonomyLinks } from "@/components/admin/taxonomy/LinkBadges";
 
 const SkillsPage: React.FC = () => {
   const [data, setData] = useState<PaginationResponse<ManagedSkill> | null>(
@@ -28,6 +31,10 @@ const SkillsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("");
+  // Recruiter admin 10.1: "" = anyone, else recruiter | employer | candidate | admin.
+  const [addedByFilter, setAddedByFilter] = useState("");
+  const addedByRef = useRef(addedByFilter);
+  addedByRef.current = addedByFilter;
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ManagedSkill | null>(null);
@@ -35,11 +42,12 @@ const SkillsPage: React.FC = () => {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   const { toast } = useToast();
+  const links = useTaxonomyLinks("skill", data?.data);
 
   const fetchData = async (page = 1, searchTerm = "", verified = "") => {
     try {
       setLoading(true);
-      const result = await getSkills(page, 20, searchTerm, verified);
+      const result = await getSkills(page, 20, searchTerm, verified, addedByRef.current);
       setData(result);
     } catch (error) {
       toast({
@@ -59,7 +67,7 @@ const SkillsPage: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [search, verifiedFilter]);
+  }, [search, verifiedFilter, addedByFilter]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -166,33 +174,51 @@ const SkillsPage: React.FC = () => {
         {/* <BulkUploadButton onClick={() => setBulkUploadOpen(true)} /> */}
       </div>
 
-      <Card>
-        <CardContent>
-          <ManagementTable
-            title="Skills"
-            data={data}
-            loading={loading}
-            search={search}
-            onSearchChange={setSearch}
-            onRefresh={() => fetchData(currentPage, search, verifiedFilter)}
-            onPageChange={handlePageChange}
-            currentPage={currentPage}
-            onVerifyToggle={handleVerifyToggle}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onBulkAction={handleBulkAction}
-            onCreate={() => setModalOpen(true)}
-            verifiedFilter={verifiedFilter}
-            onVerifiedFilterChange={setVerifiedFilter}
-            extraActions={
-              <BulkUploadButton
-                onClick={() => setBulkUploadOpen(true)}
-                className="mr-2"
+      <Tabs defaultValue="list">
+        <TabsList>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list">
+          <Card>
+            <CardContent>
+              <ManagementTable
+                title="Skills"
+                data={data}
+                loading={loading}
+                search={search}
+                onSearchChange={setSearch}
+                onRefresh={() => fetchData(currentPage, search, verifiedFilter)}
+                onPageChange={handlePageChange}
+                currentPage={currentPage}
+                onVerifyToggle={handleVerifyToggle}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onBulkAction={handleBulkAction}
+                onCreate={() => setModalOpen(true)}
+                verifiedFilter={verifiedFilter}
+                addedByFilter={addedByFilter}
+                onAddedByFilterChange={setAddedByFilter}
+                onVerifiedFilterChange={setVerifiedFilter}
+                extraColumns={[linkColumn("skill", links)]}
+                extraActions={
+                  <BulkUploadButton
+                    onClick={() => setBulkUploadOpen(true)}
+                    className="mr-2"
+                  />
+                }
               />
-            }
-          />
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="review">
+          <Card>
+            <CardContent className="pt-6">
+              <ReviewQueue type="skill" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <CreateEditModal
         isOpen={modalOpen}

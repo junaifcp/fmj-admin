@@ -7,7 +7,6 @@ import {
   DateFilterPreset,
   DateRange,
 } from "@/types/admin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -18,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MetricCard } from "@/components/admin/MetricCard";
+import { Link } from "react-router-dom";
+import { PATHS } from "@/routes/paths";
 import {
   getDateRangeFromPreset,
   formatDateRangeForDisplay,
@@ -272,16 +273,23 @@ const Dashboard: React.FC = () => {
           iconColor="text-primary"
           filterLabel={currentFilterLabel}
         />
-        <MetricCard
-          title="Employers"
-          icon={<Building2 className="h-5 w-5" />}
-          total={totals?.totalEmployers || 0}
-          newCount={filteredMetrics?.newEmployers || 0}
-          isLoading={loadingTotals}
-          isFiltering={!!filteredMetrics && !loadingFiltered}
-          iconColor="text-success"
-          filterLabel={currentFilterLabel}
-        />
+        {/* Employer admin 11.1: opens Employers → Overview. */}
+        <Link
+          to={PATHS.ADMIN.EMPLOYERS_ADMIN.OVERVIEW}
+          className="block rounded-lg transition-shadow hover:shadow-md"
+          aria-label="Open Employers Overview"
+        >
+          <MetricCard
+            title="Employers"
+            icon={<Building2 className="h-5 w-5" />}
+            total={totals?.totalEmployers || 0}
+            newCount={filteredMetrics?.newEmployers || 0}
+            isLoading={loadingTotals}
+            isFiltering={!!filteredMetrics && !loadingFiltered}
+            iconColor="text-success"
+            filterLabel={currentFilterLabel}
+          />
+        </Link>
       </div>
 
       {/* Metric Cards - Row 2: Jobs, Resumes, Revenue */}
@@ -318,23 +326,6 @@ const Dashboard: React.FC = () => {
           filterLabel={currentFilterLabel}
         />
       </div>
-
-      {/* Note about Employers */}
-      <Card className="border-amber-200 bg-amber-50/50">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-amber-900 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Employer Metrics Coming Soon
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-amber-800">
-            The Employer role is not yet implemented. Employer metrics will show
-            actual data once the employer functionality is added to the
-            platform.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };

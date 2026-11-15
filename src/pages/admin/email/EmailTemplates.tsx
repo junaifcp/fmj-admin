@@ -309,9 +309,10 @@ const EmailTemplatesPage: React.FC = () => {
                 </div>
               </div>
               <Select
-                value={categoryFilter}
+                value={categoryFilter || "all"}
                 onValueChange={(value) => {
-                  setCategoryFilter(value);
+                  // Radix Select rejects value="", so "all" stands for no filter.
+                  setCategoryFilter(value === "all" ? "" : value);
                   setCurrentPage(1);
                 }}
               >
@@ -319,7 +320,7 @@ const EmailTemplatesPage: React.FC = () => {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="marketing">Marketing</SelectItem>
                   <SelectItem value="job-opening">Job Opening</SelectItem>
                   <SelectItem value="notification">Notification</SelectItem>
