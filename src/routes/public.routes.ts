@@ -1,10 +1,10 @@
 // src/routes/public.routes.ts
-import { lazy } from "react";
+import { lazyWithReload } from "./lazyWithReload";
 import { RouteConfig } from "./types";
 
-const SignInLanding = lazy(() => import("@/pages/SignInLanding"));
-const SignInForm = lazy(() => import("@/components/auth/SignInForm"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
+const SignInLanding = lazyWithReload(() => import("@/pages/SignInLanding"));
+const SignInForm = lazyWithReload(() => import("@/components/auth/SignInForm"));
+const NotFound = lazyWithReload(() => import("@/pages/NotFound"));
 
 export const publicRoutes: RouteConfig[] = [
   {

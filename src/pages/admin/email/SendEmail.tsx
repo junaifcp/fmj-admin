@@ -101,6 +101,21 @@ const SendEmailPage: React.FC = () => {
   const [filterLastActiveFrom, setFilterLastActiveFrom] = useState("");
   const [filterLastActiveTo, setFilterLastActiveTo] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
+  // Recruiter audience (recruiter admin 10.1). "all" = no filter.
+  const [filterOnboarded, setFilterOnboarded] = useState<"all" | "true" | "false">("all");
+  const [filterCompanyVerified, setFilterCompanyVerified] = useState<
+    "all" | "pending" | "verified" | "rejected"
+  >("all");
+  // Employer audience (employer admin 11.1). "all" = no filter.
+  const [filterSource, setFilterSource] = useState<"all" | "ad_landing" | "dashboard" | "invite">("all");
+  const [filterChannel, setFilterChannel] = useState<"all" | "meta_paid" | "direct">("all");
+  const [filterCampaign, setFilterCampaign] = useState("");
+  const [filterHasCompany, setFilterHasCompany] = useState<"all" | "true" | "false">("all");
+  const [filterPosted, setFilterPosted] = useState<"all" | "true" | "false">("all");
+  const isRecruiters = selectedType === "recruiters";
+  const isEmployers = selectedType === "employers";
+  // Candidate-only filters (location, skills, job titles, subscription) are hidden for both.
+  const isHiring = isRecruiters || isEmployers;
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
   // Candidates list state
@@ -259,6 +274,13 @@ const SendEmailPage: React.FC = () => {
   }, [selectedTemplateId, templateVariables, showPreview]);
 
   // Apply filters
+  // Recruiter admin 10.1: a different audience starts from an empty recipient list.
+  useEffect(() => {
+    setCandidates([]);
+    setSelectedCandidateIds([]);
+    setHasActiveFilters(false);
+  }, [selectedType]);
+
   const handleApplyFilters = async () => {
     try {
       setLoadingCandidates(true);
@@ -269,7 +291,7 @@ const SendEmailPage: React.FC = () => {
       // Deduplicate: Track seen emails to avoid duplicates
       const seenEmails = new Set<string>();
 
-      if (filterLocation && filterLocation.lat && filterLocation.lng) {
+      if (!isHiring && filterLocation && filterLocation.lat && filterLocation.lng) {
         filters.location = {
           lat: filterLocation.lat,
           lng: filterLocation.lng,
@@ -277,12 +299,26 @@ const SendEmailPage: React.FC = () => {
         };
       }
 
-      if (filterSkills.length > 0) {
+      if (!isHiring && filterSkills.length > 0) {
         filters.skills = filterSkills;
       }
 
-      if (filterJobTitles.length > 0) {
+      if (!isHiring && filterJobTitles.length > 0) {
         filters.jobTitles = filterJobTitles;
+      }
+
+      // Suspended and unsubscribed recruiters are always left out by the backend.
+      if (isRecruiters && filterOnboarded !== "all") filters.onboarded = filterOnboarded;
+      if (isHiring && filterCompanyVerified !== "all") {
+        filters.companyVerified = filterCompanyVerified;
+      }
+      // Suspended, unsubscribed and placeholder-email employers are always left out by the backend.
+      if (isEmployers) {
+        if (filterSource !== "all") filters.source = filterSource;
+        if (filterChannel !== "all") filters.channel = filterChannel;
+        if (filterCampaign.trim()) filters.utmCampaign = filterCampaign.trim();
+        if (filterHasCompany !== "all") filters.hasCompany = filterHasCompany;
+        if (filterPosted !== "all") filters.posted = filterPosted;
       }
 
       if (filterDateFrom || filterDateTo) {
@@ -292,7 +328,7 @@ const SendEmailPage: React.FC = () => {
         };
       }
 
-      if (filterSubscriptionStatus !== "all") {
+      if (!isHiring && filterSubscriptionStatus !== "all") {
         filters.subscriptionStatus = filterSubscriptionStatus;
       }
 
@@ -326,7 +362,7 @@ const SendEmailPage: React.FC = () => {
 
       toast({
         title: "Filters applied",
-        description: `Found ${result.candidates?.length || 0} candidates`,
+        description: `Found ${result.candidates?.length || 0} ${selectedType}`,
       });
     } catch (error) {
       toast({
@@ -350,6 +386,8 @@ const SendEmailPage: React.FC = () => {
     setFilterSubscriptionStatus("all");
     setFilterLastActiveFrom("");
     setFilterLastActiveTo("");
+    setFilterOnboarded("all");
+    setFilterCompanyVerified("all");
     setFilterSearch("");
     setHasActiveFilters(false);
     setCandidates([]);
@@ -465,15 +503,10 @@ const SendEmailPage: React.FC = () => {
 
         <Card
           className={cn(
-            "cursor-pointer transition-all hover:shadow-md opacity-50",
-            selectedType === "recruiters" && "ring-2 ring-primary opacity-100"
+            "cursor-pointer transition-all hover:shadow-md",
+            selectedType === "recruiters" && "ring-2 ring-primary"
           )}
-          onClick={() => {
-            toast({
-              title: "Coming soon",
-              description: "Recruiters email sending will be available soon",
-            });
-          }}
+          onClick={() => setSelectedType("recruiters")}
         >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -490,22 +523,17 @@ const SendEmailPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Send emails to recruiters
+              Send emails to recruiters (suspended and unsubscribed are left out)
             </p>
           </CardContent>
         </Card>
 
         <Card
           className={cn(
-            "cursor-pointer transition-all hover:shadow-md opacity-50",
-            selectedType === "employers" && "ring-2 ring-primary opacity-100"
+            "cursor-pointer transition-all hover:shadow-md",
+            selectedType === "employers" && "ring-2 ring-primary"
           )}
-          onClick={() => {
-            toast({
-              title: "Coming soon",
-              description: "Employers email sending will be available soon",
-            });
-          }}
+          onClick={() => setSelectedType("employers")}
         >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -522,7 +550,7 @@ const SendEmailPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Send emails to employers
+              Send emails to employers (suspended, unsubscribed and phone-only accounts are left out)
             </p>
           </CardContent>
         </Card>
@@ -608,6 +636,8 @@ const SendEmailPage: React.FC = () => {
                   />
                 </div>
 
+                {!isHiring && (
+                  <>
                 {/* Location Filter */}
                 <div className="space-y-3">
                   <Label>Location</Label>
@@ -679,6 +709,8 @@ const SendEmailPage: React.FC = () => {
                     maxItems={10}
                   />
                 </div>
+                  </>
+                )}
 
                 {/* Registration Date Range */}
                 <div className="space-y-4">
@@ -717,6 +749,129 @@ const SendEmailPage: React.FC = () => {
                   </div>
                 </div>
 
+                {isHiring ? (
+                  <>
+                    {isEmployers && (
+                      <>
+                        {/* Employer audience (employer admin 11.1) */}
+                        <div className="space-y-2">
+                          <Label>Sign-up source</Label>
+                          <Select
+                            value={filterSource}
+                            onValueChange={(v) => setFilterSource(v as typeof filterSource)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Any source</SelectItem>
+                              <SelectItem value="ad_landing">Ad landing (/post-a-job)</SelectItem>
+                              <SelectItem value="dashboard">Dashboard sign-up</SelectItem>
+                              <SelectItem value="invite">Recruiter invite</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Channel</Label>
+                          <Select
+                            value={filterChannel}
+                            onValueChange={(v) => setFilterChannel(v as typeof filterChannel)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Any channel</SelectItem>
+                              <SelectItem value="meta_paid">Meta ads</SelectItem>
+                              <SelectItem value="direct">Direct</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Campaign (utm_campaign)</Label>
+                          <Input
+                            placeholder="e.g. employer-jobs"
+                            value={filterCampaign}
+                            onChange={(e) => setFilterCampaign(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Company</Label>
+                          <Select
+                            value={filterHasCompany}
+                            onValueChange={(v) => setFilterHasCompany(v as typeof filterHasCompany)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">With or without a company</SelectItem>
+                              <SelectItem value="true">Has a company</SelectItem>
+                              <SelectItem value="false">No company yet</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Posted a job</Label>
+                          <Select
+                            value={filterPosted}
+                            onValueChange={(v) => setFilterPosted(v as typeof filterPosted)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Posted or not</SelectItem>
+                              <SelectItem value="true">Posted a job</SelectItem>
+                              <SelectItem value="false">Never posted</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+                    {isRecruiters && (
+                    <>
+                    {/* Recruiter onboarding (recruiter admin 10.1) */}
+                    <div className="space-y-2">
+                      <Label>Onboarding</Label>
+                      <Select
+                        value={filterOnboarded}
+                        onValueChange={(v) => setFilterOnboarded(v as "all" | "true" | "false")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All recruiters</SelectItem>
+                          <SelectItem value="true">Onboarded</SelectItem>
+                          <SelectItem value="false">Not onboarded</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    </>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Company verification</Label>
+                      <Select
+                        value={filterCompanyVerified}
+                        onValueChange={(v) =>
+                          setFilterCompanyVerified(v as "all" | "pending" | "verified" | "rejected")
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any company</SelectItem>
+                          <SelectItem value="pending">Company pending</SelectItem>
+                          <SelectItem value="verified">Company verified</SelectItem>
+                          <SelectItem value="rejected">Company rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                ) : (
+                  <>
                 {/* Subscription Status */}
                 <div className="space-y-2">
                   <Label>Subscription Status</Label>
@@ -736,6 +891,8 @@ const SendEmailPage: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                  </>
+                )}
 
                 {/* Last Active Date Range */}
                 <div className="space-y-4">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -31,6 +31,10 @@ const JobTitlesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("");
+  // Recruiter admin 10.1: "" = anyone, else recruiter | employer | candidate | admin.
+  const [addedByFilter, setAddedByFilter] = useState("");
+  const addedByRef = useRef(addedByFilter);
+  addedByRef.current = addedByFilter;
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ManagedJobTitle | null>(null);
@@ -43,7 +47,7 @@ const JobTitlesPage: React.FC = () => {
   const fetchData = useCallback(async (page = 1, searchTerm = "", verified = "") => {
     try {
       setLoading(true);
-      const result = await getJobTitles(page, 20, searchTerm, verified);
+      const result = await getJobTitles(page, 20, searchTerm, verified, addedByRef.current);
       console.log("Fetched job titles:", result);
       setData(result);
     } catch (error) {
@@ -64,7 +68,7 @@ const JobTitlesPage: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [search, verifiedFilter, fetchData]);
+  }, [search, verifiedFilter, addedByFilter, fetchData]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -182,6 +186,8 @@ const JobTitlesPage: React.FC = () => {
                 onBulkAction={handleBulkAction}
                 onCreate={() => setModalOpen(true)}
                 verifiedFilter={verifiedFilter}
+                addedByFilter={addedByFilter}
+                onAddedByFilterChange={setAddedByFilter}
                 onVerifiedFilterChange={setVerifiedFilter}
                 extraColumns={[linkColumn("title", links)]}
                 extraActions={

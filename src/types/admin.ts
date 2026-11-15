@@ -94,7 +94,6 @@ export interface AdminPlan {
   activeSubscriptions: number;
   isActive?: boolean;
   displayName?: string;
-  jobPostsLimit?: number;
 }
 
 export interface AdminContactMessage {
@@ -104,6 +103,10 @@ export interface AdminContactMessage {
   subject: string;
   message: string;
   status: "unread" | "read" | "replied";
+  /** Recruiter admin 10.1. Missing on old rows = candidate. */
+  source?: "candidate" | "recruiter" | "employer";
+  /** Employer admin 11.1: set when the email belongs to an employer account (list only). */
+  employerUserId?: string | null;
   createdAt: string;
 }
 
@@ -263,75 +266,8 @@ export type TaxonomyLinks = Record<
 >;
 export type ManagedQualification = ManagedItem;
 
-export interface ManagedCompany {
-  _id: string;
-  name: string;
-  location?: {
-    placeId?: string;
-    formattedAddress?: string;
-    lat?: number;
-    lng?: number;
-    country?: string;
-    region?: string;
-    city?: string;
-    postalCode?: string;
-    street?: string;
-    components?: {
-      street?: string;
-      city?: string;
-      region?: string;
-      country?: string;
-      postalCode?: string;
-    };
-    source?: string;
-  } | null;
-  industry?: string;
-  verified: "pending" | "verified" | "rejected";
-  ownerId?: string;
-  ownerEmail?: string;
-  ownerName?: string;
-  createdAt: string;
-  updatedAt: string;
-  notes?: string;
-  logo?: string;
-  website?: string;
-  email?: string;
-  phone?: string;
-  description?: string;
-  size?: string;
-}
 
-// Recruiter Management Types
-export interface AdminRecruiter {
-  _id: string;
-  clerkUserId?: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
-  phone?: string;
-  company?: string;
-  position?: string;
-  role: "recruiter" | "admin" | "superadmin";
-  subscription?: {
-    planType: "free" | "starter" | "premium";
-    status: "active" | "expired" | "inactive" | "cancelled" | "on_hold";
-    currentPeriodStart?: string;
-    currentPeriodEnd?: string;
-    jobPostsUsed: number;
-    jobPostsLimit: number;
-    autoRenew: boolean;
-  };
-  stats?: {
-    totalJobs: number;
-    activeJobs: number;
-    totalApplications: number;
-  };
-  createdAt: string;
-  lastActive?: string;
-  isEmailVerified?: boolean;
-  basicInfoProvided?: boolean;
-}
+// Recruiter types: see types/recruiterAdmin.ts
 
 export interface PlanAnalyticsSummary {
   totalRevenue: number;
@@ -427,7 +363,7 @@ export interface SupportTicket {
 export interface DashboardTotals {
   totalCandidates: number;
   totalRecruiters: number;
-  totalEmployers: number; // Will be 0 until employer role is implemented
+  totalEmployers: number;
   totalJobs: number;
   totalResumes: number;
   totalRevenue: number; // in paise
@@ -436,7 +372,7 @@ export interface DashboardTotals {
 export interface DashboardFiltered {
   newCandidates: number;
   newRecruiters: number;
-  newEmployers: number; // Will be 0 until employer role is implemented
+  newEmployers: number;
   newJobs: number;
   newResumes: number;
   newRevenue: number; // in paise

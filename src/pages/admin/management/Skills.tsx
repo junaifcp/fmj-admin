@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -31,6 +31,10 @@ const SkillsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("");
+  // Recruiter admin 10.1: "" = anyone, else recruiter | employer | candidate | admin.
+  const [addedByFilter, setAddedByFilter] = useState("");
+  const addedByRef = useRef(addedByFilter);
+  addedByRef.current = addedByFilter;
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ManagedSkill | null>(null);
@@ -43,7 +47,7 @@ const SkillsPage: React.FC = () => {
   const fetchData = async (page = 1, searchTerm = "", verified = "") => {
     try {
       setLoading(true);
-      const result = await getSkills(page, 20, searchTerm, verified);
+      const result = await getSkills(page, 20, searchTerm, verified, addedByRef.current);
       setData(result);
     } catch (error) {
       toast({
@@ -63,7 +67,7 @@ const SkillsPage: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [search, verifiedFilter]);
+  }, [search, verifiedFilter, addedByFilter]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -193,6 +197,8 @@ const SkillsPage: React.FC = () => {
                 onBulkAction={handleBulkAction}
                 onCreate={() => setModalOpen(true)}
                 verifiedFilter={verifiedFilter}
+                addedByFilter={addedByFilter}
+                onAddedByFilterChange={setAddedByFilter}
                 onVerifiedFilterChange={setVerifiedFilter}
                 extraColumns={[linkColumn("skill", links)]}
                 extraActions={

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -27,6 +27,10 @@ const QualificationsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("");
+  // Recruiter admin 10.1: "" = anyone, else recruiter | employer | candidate | admin.
+  const [addedByFilter, setAddedByFilter] = useState("");
+  const addedByRef = useRef(addedByFilter);
+  addedByRef.current = addedByFilter;
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ManagedQualification | null>(
@@ -40,7 +44,7 @@ const QualificationsPage: React.FC = () => {
   const fetchData = useCallback(async (page = 1, searchTerm = "", verified = "") => {
     try {
       setLoading(true);
-      const result = await getQualifications(page, 20, searchTerm, verified);
+      const result = await getQualifications(page, 20, searchTerm, verified, addedByRef.current);
       setData(result);
     } catch (error) {
       toast({
@@ -60,7 +64,7 @@ const QualificationsPage: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [search, verifiedFilter, fetchData]);
+  }, [search, verifiedFilter, addedByFilter, fetchData]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -191,6 +195,8 @@ const QualificationsPage: React.FC = () => {
             onBulkAction={handleBulkAction}
             onCreate={() => setModalOpen(true)}
             verifiedFilter={verifiedFilter}
+                addedByFilter={addedByFilter}
+                onAddedByFilterChange={setAddedByFilter}
             onVerifiedFilterChange={setVerifiedFilter}
           />
         </CardContent>

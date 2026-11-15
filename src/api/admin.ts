@@ -11,8 +11,6 @@ import {
   ManagedSkill,
   ManagedJobTitle,
   ManagedQualification,
-  ManagedCompany,
-  AdminRecruiter,
   PlanAnalytics,
   DashboardTotals,
   DashboardFiltered,
@@ -453,11 +451,14 @@ export async function getDashboardFilteredMetrics(
 export const getContactMessages = async (
   page = 1,
   limit = 20,
+  /** Recruiter admin 10.1: "" = all; candidate | recruiter | employer */
+  source = "",
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<PaginationResponse<AdminContactMessage>> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
+    ...(source && { source }),
   });
   return get<PaginationResponse<AdminContactMessage>>(
     `/messages?${params.toString()}`,
@@ -511,6 +512,7 @@ const listEndpoint = <T = any>(
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) => {
   const params = new URLSearchParams({
@@ -518,6 +520,8 @@ const listEndpoint = <T = any>(
     limit: limit.toString(),
     ...(search && { search }),
     ...(verified && { verified }),
+    // Recruiter admin 10.1: recruiter | employer | candidate | admin (creator's role)
+    ...(addedBy && { addedBy }),
   });
   return get<PaginationResponse<T>>(`${path}?${params.toString()}`, opts);
 };
@@ -549,6 +553,7 @@ export const getSkills = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedSkill>(
@@ -557,6 +562,7 @@ export const getSkills = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createSkill = (
@@ -595,6 +601,7 @@ export const getJobTitles = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedJobTitle>(
@@ -603,6 +610,7 @@ export const getJobTitles = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createJobTitle = (
@@ -650,6 +658,7 @@ export const getQualifications = (
   limit = 20,
   search = "",
   verified = "",
+  addedBy = "",
   opts?: { signal?: AbortSignal; token?: string }
 ) =>
   listEndpoint<ManagedQualification>(
@@ -658,6 +667,7 @@ export const getQualifications = (
     limit,
     search,
     verified,
+    addedBy,
     opts
   );
 export const createQualification = (
@@ -709,39 +719,15 @@ export const bulkActionQualifications = (
     opts
   );
 
-// Recruiter Management
-export const getRecruiters = (
-  page = 1,
-  limit = 20,
-  search = "",
-  planType = "",
-  status = "",
-  opts?: { signal?: AbortSignal; token?: string }
-) => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(search && { search }),
-    ...(planType && { planType }),
-    ...(status && { status }),
-  });
-  return get<PaginationResponse<AdminRecruiter>>(
-    `/recruiters?${params.toString()}`,
-    opts
-  );
-};
-
-export const getRecruiter = (
-  recruiterId: string,
-  opts?: { signal?: AbortSignal; token?: string }
-) => get<AdminRecruiter>(`/recruiters/${recruiterId}`, opts);
-
+// Recruiter Management (list, detail and actions: see api/recruiterAdmin.ts)
 export const exportRecruitersCSV = async (
   recruiterIds: string[] = [],
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<void> => {
   const params =
-    recruiterIds.length > 0 ? `?ids=${recruiterIds.join(",")}` : "";
+    recruiterIds.length > 0
+      ? `?recruiterIds=${encodeURIComponent(recruiterIds.join(","))}`
+      : "";
   const res = await client.request({
     method: "get",
     url: `/recruiters/export${params}`,
@@ -764,17 +750,6 @@ export const exportRecruitersCSV = async (
     throw new Error(`Export failed: HTTP ${res.status}`);
   }
 };
-
-export const updateRecruiterRole = (
-  recruiterId: string,
-  role: string,
-  opts?: { signal?: AbortSignal; token?: string }
-) =>
-  put<{ success: boolean; user: AdminRecruiter }>(
-    `/recruiters/${recruiterId}/role`,
-    { role },
-    opts
-  );
 
 // Payment/Plan Activation for Users
 const PAYMENT_BASE_URL = `${apiBaseUrl.replace(/\/$/, "")}/payments`;
@@ -1304,6 +1279,16 @@ export interface FilterOptions {
   subscriptionStatus?: "active" | "inactive" | "all";
   lastActiveRange?: { from?: string; to?: string };
   search?: string;
+  /** Recruiter audience only (recruiter admin 10.1). */
+  onboarded?: "true" | "false";
+  /** Recruiter and employer audiences. */
+  companyVerified?: "pending" | "verified" | "rejected";
+  /** Employer audience only (employer admin 11.1). */
+  source?: "ad_landing" | "dashboard" | "invite";
+  channel?: "meta_paid" | "direct";
+  utmCampaign?: string;
+  hasCompany?: "true" | "false";
+  posted?: "true" | "false";
 }
 
 export interface BulkEmailResponse {

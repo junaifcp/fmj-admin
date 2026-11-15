@@ -25,12 +25,20 @@ import {
   Calendar,
   ExternalLink,
   ShieldCheck,
+  ClipboardList,
+  History,
+  PieChart,
+  Filter,
+  Inbox,
+  Globe,
+  IndianRupee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { clearTokenCache } from "@/utils/auth";
 import { useImprovedAuth } from "@/context/ImprovedAuthContext";
+import { PATHS } from "@/routes/paths";
 
 interface NavItem {
   name: string;
@@ -83,16 +91,102 @@ const AdminLayout: React.FC = () => {
 
   const recruiterItems: NavItem[] = [
     {
-      name: "Recruiter Dashboard",
-      href: "/admin/recruiters/dashboard",
+      name: "Overview",
+      href: PATHS.ADMIN.RECRUITERS_ADMIN.OVERVIEW,
       icon: LayoutDashboard,
       exact: true, // Use exact matching for sibling routes
     },
     {
-      name: "Recruiters",
-      href: "/admin/recruiters",
+      name: "All Recruiters",
+      href: PATHS.ADMIN.RECRUITERS_ADMIN.LIST,
       icon: Briefcase,
       exact: true, // Use exact matching for sibling routes
+    },
+    {
+      name: "Employer Invites",
+      href: PATHS.ADMIN.RECRUITERS_ADMIN.EMPLOYER_INVITES,
+      icon: Send,
+      exact: true,
+    },
+  ];
+
+  // Employer admin 4.1: Employers menu. Other items arrive with their phases.
+  const employerItems: NavItem[] = [
+    {
+      name: "Overview",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.OVERVIEW,
+      icon: LayoutDashboard,
+      exact: true,
+    },
+    {
+      name: "All Employers",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.LIST,
+      icon: Building,
+      exact: true,
+    },
+    {
+      name: "Post-a-Job Funnel",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.FUNNEL,
+      icon: Filter,
+      exact: true,
+    },
+    {
+      name: "Job Desk",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.JOB_DESK,
+      icon: ClipboardList,
+      exact: true,
+    },
+    {
+      name: "Paid Services",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.PAYMENTS,
+      icon: IndianRupee,
+      exact: true,
+    },
+    {
+      name: "CV Drops",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.CV_DROPS,
+      icon: Inbox,
+      exact: true,
+    },
+    {
+      name: "Career Pages",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.CAREER_PAGES,
+      icon: Globe,
+      exact: true,
+    },
+    {
+      name: "WhatsApp",
+      href: PATHS.ADMIN.EMPLOYERS_ADMIN.WHATSAPP,
+      icon: MessageCircle,
+      exact: true,
+    },
+  ];
+
+  // Employer admin 4.1: pages shared by recruiters and employers.
+  const hiringItems: NavItem[] = [
+    {
+      name: "Companies",
+      href: PATHS.ADMIN.HIRING.COMPANIES,
+      icon: Building,
+      exact: true,
+    },
+    {
+      name: "Jobs",
+      href: PATHS.ADMIN.HIRING.JOBS,
+      icon: FileText,
+      exact: true,
+    },
+    {
+      name: "Applications",
+      href: PATHS.ADMIN.HIRING.APPLICATIONS,
+      icon: PieChart,
+      exact: true,
+    },
+    {
+      name: "Activity Log",
+      href: PATHS.ADMIN.HIRING.ACTIVITY,
+      icon: History,
+      exact: true,
     },
   ];
 
@@ -110,15 +204,15 @@ const AdminLayout: React.FC = () => {
       exact: true,
     },
     {
-      name: "Companies",
-      href: "/admin/management/companies",
+      name: "Business Data",
+      href: "/admin/management/business-data",
       icon: Building,
       exact: true,
     },
     {
-      name: "Business Data",
-      href: "/admin/management/business-data",
-      icon: Building,
+      name: "Messages",
+      href: PATHS.ADMIN.MESSAGES,
+      icon: MessageCircle,
       exact: true,
     },
     {
@@ -189,6 +283,8 @@ const AdminLayout: React.FC = () => {
   const collapsibleSections: CollapsibleNavSection[] = [
     { name: "Candidates", icon: UserCircle, items: candidateItems },
     { name: "Recruiters", icon: Briefcase, items: recruiterItems },
+    { name: "Employers", icon: Building, items: employerItems },
+    { name: "Hiring", icon: ClipboardList, items: hiringItems },
     { name: "Management", icon: FolderOpen, items: managementItems },
     { name: "Email Management", icon: Mail, items: emailManagementItems },
   ];

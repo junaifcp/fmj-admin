@@ -504,10 +504,11 @@ const EmailServersPage: React.FC = () => {
                 </div>
               </div>
               <Select
-                value={providerFilter}
+                value={providerFilter || "all"}
                 onValueChange={(value) =>
+                  // Radix Select rejects value="", so "all" stands for no filter.
                   setProviderFilter(
-                    value as "gmail" | "smtp" | "outlook" | "ses" | ""
+                    (value === "all" ? "" : value) as "gmail" | "smtp" | "outlook" | "ses" | ""
                   )
                 }
               >
@@ -515,7 +516,7 @@ const EmailServersPage: React.FC = () => {
                   <SelectValue placeholder="All Providers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Providers</SelectItem>
+                  <SelectItem value="all">All Providers</SelectItem>
                   <SelectItem value="gmail">Gmail</SelectItem>
                   <SelectItem value="smtp">SMTP</SelectItem>
                   <SelectItem value="outlook">Outlook</SelectItem>

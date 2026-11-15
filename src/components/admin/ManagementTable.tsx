@@ -66,6 +66,9 @@ interface ManagementTableProps<T extends ManagedItem> {
   onCreate?: () => void;
   verifiedFilter: string;
   onVerifiedFilterChange: (filter: string) => void;
+  /** Recruiter admin 10.1: "" = anyone; recruiter | employer | candidate | admin. Hidden when not passed. */
+  addedByFilter?: string;
+  onAddedByFilterChange?: (filter: string) => void;
   extraColumns?: {
     header: string;
     render: (item: T) => React.ReactNode;
@@ -89,6 +92,8 @@ export function ManagementTable<T extends ManagedItem>({
   onCreate,
   verifiedFilter,
   onVerifiedFilterChange,
+  addedByFilter,
+  onAddedByFilterChange,
   extraColumns = [],
   extraActions,
 }: ManagementTableProps<T>) {
@@ -199,6 +204,24 @@ export function ManagementTable<T extends ManagedItem>({
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
+
+        {onAddedByFilterChange && (
+          <Select
+            value={addedByFilter ? addedByFilter : ALL_SENTINEL}
+            onValueChange={(val) => onAddedByFilterChange(val === ALL_SENTINEL ? "" : val)}
+          >
+            <SelectTrigger className="w-44" aria-label="Added by">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_SENTINEL}>Added by anyone</SelectItem>
+              <SelectItem value="recruiter">Added by recruiters</SelectItem>
+              <SelectItem value="employer">Added by employers</SelectItem>
+              <SelectItem value="candidate">Added by candidates</SelectItem>
+              <SelectItem value="admin">Added by admins</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
 
         <Button
           onClick={onRefresh}
