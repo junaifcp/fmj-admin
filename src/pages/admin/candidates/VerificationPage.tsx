@@ -2,11 +2,15 @@
 // Candidate verification approval 5.1: Candidates → Verification.
 // One row per submitted identity document. Pending first; Approved and All on
 // the filter. View streams the private file; Approve sets the candidate verified.
-// Decisions: docs/candidate-verification-approval/locked-decisions.md
+// DigiLocker verification 7.1: a Source column, and View on a DigiLocker row
+// opens the e-Aadhaar details (Aadhaar name beside the profile name, photo,
+// XML download). DigiLocker rows are verified already: no Approve.
+// Decisions: docs/candidate-verification-approval/locked-decisions.md,
+// docs/digilocker-verification/locked-decisions.md (Admin UI)
 import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import { CheckCircle2, Eye, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, Eye, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { verificationReviewApi } from "@/api/verificationReview";
 import type {
+  VerificationDigilockerDetails,
   VerificationReviewFilter,
   VerificationReviewRow,
   VerificationSide,
@@ -94,6 +99,155 @@ const StatusPill: React.FC<{ status: VerificationReviewRow["status"] }> = ({ sta
     {status === "verified" ? "Approved" : "Pending"}
   </span>
 );
+
+const SourcePill: React.FC<{ source: VerificationReviewRow["source"] }> = ({ source }) => (
+  <span
+    className={cn(
+      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+      source === "digilocker"
+        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+        : "bg-muted text-muted-foreground"
+    )}
+  >
+    {source === "digilocker" && <ShieldCheck className="h-3.5 w-3.5" aria-hidden />}
+    {source === "digilocker" ? "DigiLocker" : "Manual"}
+  </span>
+);
+
+// ---------------------------------------------------------------------------
+// DigiLocker details: what the e-Aadhaar said, beside the profile name.
+// ---------------------------------------------------------------------------
+
+const GENDER_LABELS: Record<VerificationDigilockerDetails["gender"], string> = {
+  M: "Male",
+  F: "Female",
+  T: "Transgender",
+};
+
+/** YYYY-MM-DD → "15 Aug 1995", without a time-zone shift. */
+const formatDob = (dob: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+  return m ? format(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), "d MMM yyyy") : dob || "—";
+};
+
+type PhotoState = { state: "none" } | { state: "loading" } | { state: "ready"; url: string } | { state: "error" };
+
+const DigilockerDetailsView: React.FC<{ row: VerificationReviewRow }> = ({ row }) => {
+  const details = row.digilocker;
+  const [photo, setPhoto] = useState<PhotoState>({ state: "none" });
+  const [downloading, setDownloading] = useState(false);
+
+  // The photo streams through the admin route as a blob; revoked on close.
+  useEffect(() => {
+    if (!details?.hasPhoto) {
+      setPhoto({ state: "none" });
+      return;
+    }
+    const controller = new AbortController();
+    let url: string | null = null;
+    setPhoto({ state: "loading" });
+    verificationReviewApi
+      .getFile(row.candidateId, row.type, "photo", controller.signal)
+      .then((blob) => {
+        if (controller.signal.aborted) return;
+        url = URL.createObjectURL(blob);
+        setPhoto({ state: "ready", url });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPhoto({ state: "error" });
+      });
+    return () => {
+      controller.abort();
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [row.candidateId, row.type, details?.hasPhoto]);
+
+  const downloadXml = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await verificationReviewApi.getFile(row.candidateId, row.type, "front");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = row.frontFileName || "e-aadhaar.xml";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (e) {
+      toast.error((e as Error).message || "Could not download the e-Aadhaar XML.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!details) {
+    return <p className="rounded-md bg-muted p-4 text-sm text-destructive">DigiLocker details are missing.</p>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+        <ShieldCheck className="h-4 w-4" aria-hidden />
+        Verified via DigiLocker
+      </div>
+
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+        <div className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+          {photo.state === "ready" ? (
+            <img src={photo.url} alt="Aadhaar photo" className="h-full w-full object-cover" />
+          ) : photo.state === "loading" ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <div className="flex flex-col items-center gap-1 px-2 text-center text-xs text-muted-foreground">
+              <UserRound className="h-8 w-8" aria-hidden />
+              {photo.state === "error" ? "Photo couldn't load" : "No photo"}
+            </div>
+          )}
+        </div>
+
+        <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted-foreground">Aadhaar name</dt>
+            <dd className="break-words font-medium">{details.name || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Profile name</dt>
+            <dd className="break-words font-medium">{row.name || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Date of birth</dt>
+            <dd className="font-medium">{formatDob(details.dob)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Gender</dt>
+            <dd className="font-medium">{GENDER_LABELS[details.gender] ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Aadhaar</dt>
+            <dd className="font-medium tabular-nums">XXXX XXXX {details.last4}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {details.hasXml ? (
+        <Button type="button" variant="outline" onClick={downloadXml} disabled={downloading}>
+          {downloading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="mr-2 h-4 w-4" aria-hidden />
+          )}
+          Download e-Aadhaar XML
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          The e-Aadhaar XML wasn't stored because it held a full Aadhaar number.
+        </p>
+      )}
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // View dialog: each side loaded from the admin stream as a blob.
@@ -161,7 +315,8 @@ const ViewDialog: React.FC<{ row: VerificationReviewRow | null; onClose: () => v
   const [sides, setSides] = useState<Partial<Record<VerificationSide, SideState>>>({});
 
   useEffect(() => {
-    if (!row) return;
+    // DigiLocker rows show their details instead (the front is XML, not an image).
+    if (!row || row.source === "digilocker") return;
     const controller = new AbortController();
     const urls: string[] = [];
     setSides(Object.fromEntries(row.sides.map((s) => [s, { state: "loading" }])));
@@ -200,7 +355,8 @@ const ViewDialog: React.FC<{ row: VerificationReviewRow | null; onClose: () => v
             {row ? `Submitted ${formatDate(row.submittedAt)}` : ""}
           </DialogDescription>
         </DialogHeader>
-        {row && (
+        {row?.source === "digilocker" && <DigilockerDetailsView row={row} />}
+        {row && row.source !== "digilocker" && (
           <div className={cn("grid gap-6", twoSided && "lg:grid-cols-2")}>
             {row.sides.map((side) => (
               <SidePreview
@@ -336,6 +492,7 @@ const VerificationPage: React.FC = () => {
               <TableRow>
                 <TableHead>Candidate</TableHead>
                 <TableHead>Document</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[13rem] text-right">Actions</TableHead>
@@ -345,7 +502,7 @@ const VerificationPage: React.FC = () => {
               {loading &&
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={`skeleton-${i}`}>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={6}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
                   </TableRow>
@@ -353,7 +510,7 @@ const VerificationPage: React.FC = () => {
 
               {!loading && error && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center">
+                  <TableCell colSpan={6} className="py-10 text-center">
                     <p className="text-sm text-destructive">{error}</p>
                     <Button
                       variant="outline"
@@ -369,7 +526,7 @@ const VerificationPage: React.FC = () => {
 
               {!loading && !error && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                     {EMPTY_TEXT[filter]}
                   </TableCell>
                 </TableRow>
@@ -391,8 +548,15 @@ const VerificationPage: React.FC = () => {
                       <TableCell>
                         <div className="font-medium">{row.typeLabel}</div>
                         <div className="text-xs text-muted-foreground">
-                          {row.sides.includes("back") ? "Front and back" : "One file"}
+                          {row.source === "digilocker"
+                            ? "e-Aadhaar"
+                            : row.sides.includes("back")
+                              ? "Front and back"
+                              : "One file"}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <SourcePill source={row.source} />
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
                         {formatDate(row.submittedAt)}
@@ -412,7 +576,7 @@ const VerificationPage: React.FC = () => {
                             <Eye className="mr-1.5 h-4 w-4" />
                             View
                           </Button>
-                          {row.status === "pending" ? (
+                          {row.status === "pending" && row.source !== "digilocker" ? (
                             // Opens the confirm dialog; nothing is sent until Approve there.
                             <Button
                               size="sm"

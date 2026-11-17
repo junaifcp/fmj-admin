@@ -7,7 +7,7 @@ import type {
   VerificationReviewFilter,
   VerificationReviewList,
   VerificationReviewRow,
-  VerificationSide,
+  VerificationFileSide,
 } from "@/types/verificationReview";
 
 const client = createApiClient({
@@ -29,6 +29,19 @@ const pickRow = (r: VerificationReviewRow): VerificationReviewRow => ({
   sides: r.sides,
   frontFileName: r.frontFileName,
   ...(r.backFileName ? { backFileName: r.backFileName } : {}),
+  source: r.source === "digilocker" ? "digilocker" : "manual",
+  ...(r.source === "digilocker" && r.digilocker
+    ? {
+        digilocker: {
+          name: r.digilocker.name,
+          dob: r.digilocker.dob,
+          gender: r.digilocker.gender,
+          last4: r.digilocker.last4,
+          hasPhoto: r.digilocker.hasPhoto === true,
+          hasXml: r.digilocker.hasXml === true,
+        },
+      }
+    : {}),
 });
 
 /** A failed blob request carries its JSON error as a Blob; read the server's message. */
@@ -65,11 +78,11 @@ export const verificationReviewApi = {
     return pickRow(res.data.data);
   },
 
-  /** The stored file for the admin, as bytes. Never a URL from the server. */
+  /** The stored file for the admin, as bytes. Never a URL from the server. `photo`: DigiLocker only. */
   async getFile(
     candidateId: string,
     type: string,
-    side: VerificationSide,
+    side: VerificationFileSide,
     signal?: AbortSignal
   ): Promise<Blob> {
     try {

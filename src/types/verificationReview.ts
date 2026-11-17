@@ -10,6 +10,23 @@ export type VerificationReviewFilter = "pending" | "verified" | "all";
 
 export type VerificationSide = "front" | "back";
 
+/** A stream the admin can open: a stored side, or `photo` (the DigiLocker Aadhaar photo). */
+export type VerificationFileSide = VerificationSide | "photo";
+
+export type VerificationSource = "manual" | "digilocker";
+
+/** DigiLocker rows only. `name` is the Aadhaar name; the row's `name` is the profile name. */
+export interface VerificationDigilockerDetails {
+  name: string;
+  /** YYYY-MM-DD */
+  dob: string;
+  gender: "M" | "F" | "T";
+  last4: string;
+  hasPhoto: boolean;
+  /** The e-Aadhaar XML is stored (it is not when it held a full Aadhaar number). */
+  hasXml: boolean;
+}
+
 export interface VerificationReviewRow {
   candidateId: string;
   userId: string;
@@ -22,6 +39,8 @@ export interface VerificationReviewRow {
   sides: VerificationSide[];
   frontFileName: string;
   backFileName?: string;
+  source: VerificationSource;
+  digilocker?: VerificationDigilockerDetails;
 }
 
 export interface VerificationReviewList {
