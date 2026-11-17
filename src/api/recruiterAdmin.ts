@@ -92,6 +92,11 @@ export const recruiterAdminApi = {
     await client.post(`/${encodeURIComponent(id)}/reonboard`, { reason });
   },
 
+  /** Soft delete (reason required, 5+ chars): no sign-in or sign-up again; open jobs close. */
+  async remove(id: string, reason: string): Promise<void> {
+    await client.delete(`/${encodeURIComponent(id)}`, { data: { reason } });
+  },
+
   async verifyProfile(id: string, reason: string): Promise<void> {
     await client.post(`/${encodeURIComponent(id)}/verify-profile`, { reason });
   },

@@ -274,11 +274,12 @@ export const getUsers = async (
   );
 };
 
+/** Deletes the candidate and everything they own (server returns 204). */
 export const deleteUser = async (
   userId: string,
   opts?: { signal?: AbortSignal; token?: string }
-): Promise<{ success: boolean }> => {
-  return del<{ success: boolean }>(`/users/${userId}`, opts);
+): Promise<void> => {
+  await del<void>(`/users/${userId}`, opts);
 };
 
 export const exportUsersCSV = async (

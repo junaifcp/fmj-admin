@@ -41,6 +41,7 @@ import {
 } from "@/components/admin/recruiters/RecruiterBits";
 import { fmtDate, personName } from "@/components/admin/recruiters/recruiterFormat";
 import { PATHS } from "@/routes/paths";
+import { HiringAccountActions } from "@/components/admin/hiring/HiringAccountActions";
 
 const PAGE_SIZE = 20;
 const ALL = "all";
@@ -57,7 +58,8 @@ const FILTER_SELECTS: {
     placeholder: "Status",
     options: [
       { value: "active", label: "Active" },
-      { value: "suspended", label: "Suspended" },
+      { value: "suspended", label: "Deactivated" },
+      { value: "deleted", label: "Deleted" },
     ],
   },
   {
@@ -331,12 +333,13 @@ const RecruitersPage: React.FC = () => {
                       <TableHead>Last active</TableHead>
                       <TableHead>Joined</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="w-16 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                           {hasFilters ? "No recruiters match these filters" : "No recruiters yet"}
                         </TableCell>
                       </TableRow>
@@ -382,7 +385,17 @@ const RecruitersPage: React.FC = () => {
                           {fmtDate(r.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <RecruiterStatusBadge isActive={r.isActive} />
+                          <RecruiterStatusBadge isActive={r.isActive} deletedAt={r.deletedAt} />
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <HiringAccountActions
+                            kind="recruiter"
+                            id={r._id}
+                            email={r.email}
+                            isActive={r.isActive}
+                            deletedAt={r.deletedAt}
+                            onDone={() => setReloadKey((n) => n + 1)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}

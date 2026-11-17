@@ -73,7 +73,8 @@ type ActionKind =
   | "role";
 
 const ACTION_LABELS: Record<string, string> = {
-  "employer.suspend": "Suspended",
+  "employer.suspend": "Deactivated",
+  "employer.delete": "Deleted",
   "employer.reactivate": "Reactivated",
   "employer.revoke_sessions": "Signed out everywhere",
   "employer.reonboard": "Sent back to onboarding",
@@ -286,9 +287,9 @@ const EmployerDetail: React.FC = () => {
     { title: string; description: string; confirm: string; destructive?: boolean; required?: boolean }
   > = {
     suspend: {
-      title: "Suspend employer",
-      description: `${user.email} will be signed out and blocked. Their career page and CV drop link stop working. Their jobs stay up; remove them in Hiring → Jobs if needed.`,
-      confirm: "Suspend",
+      title: "Deactivate employer",
+      description: `${user.email} is signed out and can't sign in until reactivated. Their career page and CV drop link stop working. Their jobs stay up; remove them in Hiring → Jobs if needed.`,
+      confirm: "Deactivate",
       destructive: true,
       required: true,
     },
@@ -375,7 +376,7 @@ const EmployerDetail: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
-                  <RecruiterStatusBadge isActive={profile.isActive} />
+                  <RecruiterStatusBadge isActive={profile.isActive} deletedAt={profile.deletedAt} />
                   <SourceBadge source={acq?.source ?? null} />
                   {!profile.basicInfoProvided && <Badge variant="secondary">Not onboarded</Badge>}
                 </div>
@@ -400,75 +401,86 @@ const EmployerDetail: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm">
-                    Actions
-                    <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {profile.isActive ? (
-                    <DropdownMenuItem className="text-destructive" onSelect={() => setAction("suspend")}>
-                      Suspend…
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onSelect={() => setAction("reactivate")}>Reactivate…</DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onSelect={() => setAction("revoke")}>Sign out everywhere…</DropdownMenuItem>
-                  {profile.basicInfoProvided && (
-                    <DropdownMenuItem onSelect={() => setAction("reonboard")}>
-                      Send back to onboarding…
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  {wa.optOutAt ? (
-                    <DropdownMenuItem onSelect={() => setAction("whatsappOn")}>Turn WhatsApp on…</DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onSelect={() => setAction("whatsappOff")}>Turn WhatsApp off…</DropdownMenuItem>
-                  )}
-                  {cvDrop.code && (
-                    <>
-                      {cvDrop.enabled ? (
-                        <DropdownMenuItem onSelect={() => setAction("cvDropOff")}>
-                          Turn CV drop link off…
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onSelect={() => setAction("cvDropOn")}>
-                          Turn CV drop link on…
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onSelect={() => setAction("cvDropRotate")}>
-                        Change CV drop code…
+              {!profile.deletedAt && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      Actions
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {profile.isActive ? (
+                      <DropdownMenuItem className="text-destructive" onSelect={() => setAction("suspend")}>
+                        Deactivate…
                       </DropdownMenuItem>
-                    </>
-                  )}
-                  {careerPage.enabled ? (
-                    <DropdownMenuItem onSelect={() => setAction("careerOff")}>Turn career page off…</DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onSelect={() => setAction("careerOn")}>Turn career page on…</DropdownMenuItem>
-                  )}
-                  {isSuperadmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setNewRole("recruiter");
-                          setAction("role");
-                        }}
-                      >
-                        Change role…
+                    ) : (
+                      <DropdownMenuItem onSelect={() => setAction("reactivate")}>Reactivate…</DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onSelect={() => setAction("revoke")}>Sign out everywhere…</DropdownMenuItem>
+                    {profile.basicInfoProvided && (
+                      <DropdownMenuItem onSelect={() => setAction("reonboard")}>
+                        Send back to onboarding…
                       </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    )}
+                    <DropdownMenuSeparator />
+                    {wa.optOutAt ? (
+                      <DropdownMenuItem onSelect={() => setAction("whatsappOn")}>Turn WhatsApp on…</DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => setAction("whatsappOff")}>Turn WhatsApp off…</DropdownMenuItem>
+                    )}
+                    {cvDrop.code && (
+                      <>
+                        {cvDrop.enabled ? (
+                          <DropdownMenuItem onSelect={() => setAction("cvDropOff")}>
+                            Turn CV drop link off…
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onSelect={() => setAction("cvDropOn")}>
+                            Turn CV drop link on…
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onSelect={() => setAction("cvDropRotate")}>
+                          Change CV drop code…
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {careerPage.enabled ? (
+                      <DropdownMenuItem onSelect={() => setAction("careerOff")}>Turn career page off…</DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => setAction("careerOn")}>Turn career page on…</DropdownMenuItem>
+                    )}
+                    {isSuperadmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setNewRole("recruiter");
+                            setAction("role");
+                          }}
+                        >
+                          Change role…
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
-          {!profile.isActive && (
+          {profile.deletedAt ? (
             <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Suspended {fmtDateTime(profile.suspendedAt)}</AlertTitle>
+              <AlertTitle>Deleted {fmtDateTime(profile.deletedAt)}</AlertTitle>
+              <AlertDescription>
+                {profile.deletedReason || "No reason recorded"}
+                {profile.deletedBy && ` — by ${profile.deletedBy.name || profile.deletedBy.email}`}
+                . This email can't sign in or sign up again.
+              </AlertDescription>
+            </Alert>
+          ) : !profile.isActive && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Deactivated {fmtDateTime(profile.suspendedAt)}</AlertTitle>
               <AlertDescription>
                 {profile.suspendedReason || "No reason recorded"}
                 {profile.suspendedBy && ` — by ${profile.suspendedBy.name || profile.suspendedBy.email}`}

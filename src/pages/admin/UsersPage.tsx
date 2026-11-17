@@ -39,6 +39,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -84,6 +93,12 @@ const UsersPage: React.FC = () => {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+
+  // Delete user dialog state
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Activate Plan Modal state
   const [isActivatePlanModalOpen, setIsActivatePlanModalOpen] = useState(false);
@@ -174,25 +189,44 @@ const UsersPage: React.FC = () => {
     return () => clearTimeout(debounceTimer);
   }, [search, hasActiveFilters]);
 
-  const handleDeleteUser = async (userId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this user? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
+  const openDeleteDialog = (user: AdminUser) => {
+    setUserToDelete(user);
+    setDeleteConfirmText("");
+    setDeleteError(null);
+  };
 
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setUserToDelete(null);
+    setDeleteConfirmText("");
+    setDeleteError(null);
+  };
+
+  const deleteConfirmed =
+    !!userToDelete &&
+    deleteConfirmText.trim().toLowerCase() ===
+      (userToDelete.email || "").trim().toLowerCase();
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete || !deleteConfirmed) return;
+    setDeleting(true);
+    setDeleteError(null);
     try {
-      await deleteUser(userId);
-      toast({ title: "User deleted successfully" });
+      await deleteUser(userToDelete._id);
+      toast({
+        title: "User deleted",
+        description: `${userToDelete.email} and all their data were removed.`,
+      });
+      setSelectedUsers((prev) => prev.filter((id) => id !== userToDelete._id));
+      setUserToDelete(null);
+      setDeleteConfirmText("");
       fetchUsers(currentPage, search, hasActiveFilters);
     } catch (error) {
-      toast({
-        title: "Failed to delete user",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
+      setDeleteError(
+        error instanceof Error ? error.message : "Couldn't delete this user."
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -668,8 +702,9 @@ const UsersPage: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteUser(user._id)}
+                            onClick={() => openDeleteDialog(user)}
                             className="text-destructive hover:text-destructive"
+                            aria-label={`Delete ${user.email}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1279,6 +1314,95 @@ const UsersPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete user confirmation */}
+      <AlertDialog
+        open={!!userToDelete}
+        onOpenChange={(open) => {
+          if (!open) closeDeleteDialog();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete{" "}
+              {[userToDelete?.firstName, userToDelete?.lastName]
+                .filter(Boolean)
+                .join(" ") || userToDelete?.email}
+              ?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground break-all">
+                  {userToDelete?.email}
+                </p>
+                <p>This permanently removes:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>their account, profile and sign-in sessions</li>
+                  <li>resumes, cover letters and ATS checks</li>
+                  <li>job applications, saved jobs and job invites</li>
+                  <li>uploaded files, photos and the intro video</li>
+                </ul>
+                <p>
+                  Payment records are kept for accounting, without their name,
+                  email or phone.
+                </p>
+                <p className="font-medium text-destructive">
+                  This can't be undone.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="delete-user-confirm">
+              Type <span className="font-mono">{userToDelete?.email}</span> to
+              confirm
+            </Label>
+            <Input
+              id="delete-user-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && deleteConfirmed && !deleting) {
+                  e.preventDefault();
+                  handleDeleteUser();
+                }
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={deleting}
+            />
+          </div>
+
+          {deleteError && (
+            <Alert variant="destructive">
+              <AlertDescription>{deleteError}</AlertDescription>
+            </Alert>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={!deleteConfirmed || deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete user
+                </>
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

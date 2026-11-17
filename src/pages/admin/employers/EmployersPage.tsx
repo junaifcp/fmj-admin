@@ -26,6 +26,7 @@ import {
 } from "@/components/admin/employers/employerLabels";
 import SourceBadge from "@/components/admin/employers/SourceBadge";
 import { PATHS } from "@/routes/paths";
+import { HiringAccountActions } from "@/components/admin/hiring/HiringAccountActions";
 
 const PAGE_SIZE = 20;
 const ALL = "all";
@@ -40,7 +41,7 @@ type SelectKey =
   | "lastActiveWithin";
 
 const FILTER_SELECTS: { key: SelectKey; placeholder: string; options: [string, string][] }[] = [
-  { key: "status", placeholder: "Status", options: [["active", "Active"], ["suspended", "Suspended"]] },
+  { key: "status", placeholder: "Status", options: [["active", "Active"], ["suspended", "Deactivated"], ["deleted", "Deleted"]] },
   {
     key: "source",
     placeholder: "Source",
@@ -321,12 +322,13 @@ const EmployersPage: React.FC = () => {
                       <TableHead>Joined</TableHead>
                       <TableHead>Last active</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="w-16 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                           {hasFilters ? "No employers match these filters" : "No employers yet"}
                         </TableCell>
                       </TableRow>
@@ -398,7 +400,17 @@ const EmployersPage: React.FC = () => {
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(r.createdAt)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{fmtDate(r.lastActive)}</TableCell>
                         <TableCell>
-                          <RecruiterStatusBadge isActive={r.isActive} />
+                          <RecruiterStatusBadge isActive={r.isActive} deletedAt={r.deletedAt} />
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <HiringAccountActions
+                            kind="employer"
+                            id={r._id}
+                            email={r.email}
+                            isActive={r.isActive}
+                            deletedAt={r.deletedAt}
+                            onDone={() => setReloadKey((n) => n + 1)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}

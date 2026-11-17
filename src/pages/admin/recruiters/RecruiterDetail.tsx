@@ -79,8 +79,9 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  "recruiter.suspend": "Suspended",
+  "recruiter.suspend": "Deactivated",
   "recruiter.reactivate": "Reactivated",
+  "recruiter.delete": "Deleted",
   "recruiter.reonboard": "Sent back to onboarding",
   "recruiter.verify_profile": "Profile marked verified",
   "user.role_change": "Role changed",
@@ -328,9 +329,9 @@ const RecruiterDetail: React.FC = () => {
     { title: string; description: string; confirm: string; destructive?: boolean; required?: boolean }
   > = {
     suspend: {
-      title: "Suspend recruiter",
-      description: `${user.email} will be signed out and blocked from the recruiter portal. Their jobs stay as they are.`,
-      confirm: "Suspend",
+      title: "Deactivate recruiter",
+      description: `${user.email} is signed out and can't sign in until reactivated. Their jobs stay as they are.`,
+      confirm: "Deactivate",
       destructive: true,
       required: true,
     },
@@ -381,7 +382,7 @@ const RecruiterDetail: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
-                  <RecruiterStatusBadge isActive={profile.isActive} />
+                  <RecruiterStatusBadge isActive={profile.isActive} deletedAt={profile.deletedAt} />
                   {!profile.basicInfoProvided && <Badge variant="secondary">Not onboarded</Badge>}
                 </div>
                 <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -407,56 +408,67 @@ const RecruiterDetail: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm">
-                    Actions
-                    <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {profile.isActive ? (
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onSelect={() => setAction("suspend")}
-                    >
-                      Suspend…
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onSelect={() => setAction("reactivate")}>
-                      Reactivate…
-                    </DropdownMenuItem>
-                  )}
-                  {profile.basicInfoProvided ? (
-                    <DropdownMenuItem onSelect={() => setAction("reonboard")}>
-                      Send back to onboarding…
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onSelect={() => setAction("verify")}>
-                      Mark profile verified…
-                    </DropdownMenuItem>
-                  )}
-                  {isSuperadmin && (
-                    <>
-                      <DropdownMenuSeparator />
+              {!profile.deletedAt && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      Actions
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {profile.isActive ? (
                       <DropdownMenuItem
-                        onSelect={() => {
-                          setNewRole("admin");
-                          setAction("role");
-                        }}
+                        className="text-destructive"
+                        onSelect={() => setAction("suspend")}
                       >
-                        Change role…
+                        Deactivate…
                       </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => setAction("reactivate")}>
+                        Reactivate…
+                      </DropdownMenuItem>
+                    )}
+                    {profile.basicInfoProvided ? (
+                      <DropdownMenuItem onSelect={() => setAction("reonboard")}>
+                        Send back to onboarding…
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => setAction("verify")}>
+                        Mark profile verified…
+                      </DropdownMenuItem>
+                    )}
+                    {isSuperadmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            setNewRole("admin");
+                            setAction("role");
+                          }}
+                        >
+                          Change role…
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
-          {!profile.isActive && (
+          {profile.deletedAt ? (
             <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Suspended {fmtDateTime(profile.suspendedAt)}</AlertTitle>
+              <AlertTitle>Deleted {fmtDateTime(profile.deletedAt)}</AlertTitle>
+              <AlertDescription>
+                {profile.deletedReason || "No reason recorded"}
+                {profile.deletedBy && ` — by ${profile.deletedBy.name || profile.deletedBy.email}`}
+                . This email can't sign in or sign up again.
+              </AlertDescription>
+            </Alert>
+          ) : !profile.isActive && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Deactivated {fmtDateTime(profile.suspendedAt)}</AlertTitle>
               <AlertDescription>
                 {profile.suspendedReason || "No reason recorded"}
                 {profile.suspendedBy && ` — by ${profile.suspendedBy.name || profile.suspendedBy.email}`}

@@ -95,6 +95,8 @@ export interface RecruiterListRow {
   stats: { totalJobs: number; activeJobs: number; totalApplications: number; hires: number };
   isActive: boolean;
   suspendedAt: string | null;
+  /** Set when an admin deleted the account (soft delete). */
+  deletedAt: string | null;
   createdAt: string;
   lastActive: string | null;
   basicInfoProvided: boolean;
@@ -126,6 +128,9 @@ export interface RecruiterDetail {
     suspendedAt: string | null;
     suspendedReason: string | null;
     suspendedBy: { _id: string; email: string; name: string } | null;
+    deletedAt: string | null;
+    deletedReason: string | null;
+    deletedBy: { _id: string; email: string; name: string } | null;
   };
   companies: {
     _id: string;

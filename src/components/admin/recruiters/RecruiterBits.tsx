@@ -25,13 +25,21 @@ export const CompanyVerificationBadge: React.FC<{ value?: CompanyVerification | 
   return <Badge variant={variant}>{label}</Badge>;
 };
 
-export const RecruiterStatusBadge: React.FC<{ isActive: boolean }> = ({ isActive }) =>
-  isActive ? (
+/** Active / Deactivated (suspended) / Deleted (soft delete) — recruiters and employers. */
+export const RecruiterStatusBadge: React.FC<{ isActive: boolean; deletedAt?: string | null }> = ({
+  isActive,
+  deletedAt,
+}) =>
+  deletedAt ? (
+    <Badge variant="secondary" className="text-muted-foreground">
+      Deleted
+    </Badge>
+  ) : isActive ? (
     <Badge variant="outline" className="border-success/30 text-success">
       Active
     </Badge>
   ) : (
-    <Badge variant="destructive">Suspended</Badge>
+    <Badge variant="destructive">Deactivated</Badge>
   );
 
 /**

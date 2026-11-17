@@ -120,6 +120,10 @@ export const employerAdminApi = {
   async setActive(id: string, isActive: boolean, reason: string) {
     await client.patch(`/${enc(id)}/status`, { isActive, reason });
   },
+  /** Soft delete (reason required, 5+ chars): no sign-in or sign-up again; open jobs close. */
+  async remove(id: string, reason: string) {
+    await client.delete(`/${enc(id)}`, { data: { reason } });
+  },
   async revokeSessions(id: string, reason: string) {
     await client.post(`/${enc(id)}/revoke-sessions`, { reason });
   },

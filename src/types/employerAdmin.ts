@@ -100,6 +100,8 @@ export interface EmployerListRow {
   utmCampaign: string | null;
   isActive: boolean;
   suspendedAt: string | null;
+  /** Set when an admin deleted the account (soft delete). */
+  deletedAt: string | null;
   createdAt: string;
   lastActive: string | null;
 }
@@ -139,6 +141,9 @@ export interface EmployerDetail {
     suspendedAt: string | null;
     suspendedReason: string | null;
     suspendedBy: { _id: string; email: string; name: string } | null;
+    deletedAt: string | null;
+    deletedReason: string | null;
+    deletedBy: { _id: string; email: string; name: string } | null;
   };
   company: {
     _id: string;
