@@ -2,9 +2,10 @@
 // Candidate verification approval 5.1: Candidates → Verification.
 // One row per submitted identity document. Pending first; Approved and All on
 // the filter. View streams the private file; Approve sets the candidate verified.
-// DigiLocker verification 7.1: a Source column, and View on a DigiLocker row
-// opens the e-Aadhaar details (Aadhaar name beside the profile name, photo,
-// XML download). DigiLocker rows are verified already: no Approve.
+// DigiLocker verification: a Source column, and View on a DigiLocker row shows
+// what DigiLocker said beside the profile name. PAN and driving licence
+// (2026-11-18) also show their stored file; an Aadhaar (paused) shows its photo
+// and XML download. DigiLocker rows are verified already: no Approve.
 // Decisions: docs/candidate-verification-approval/locked-decisions.md,
 // docs/digilocker-verification/locked-decisions.md (Admin UI)
 import React, { useCallback, useEffect, useState } from "react";
@@ -134,6 +135,7 @@ type PhotoState = { state: "none" } | { state: "loading" } | { state: "ready"; u
 
 const DigilockerDetailsView: React.FC<{ row: VerificationReviewRow }> = ({ row }) => {
   const details = row.digilocker;
+  const isAadhaar = row.type === "aadhaar";
   const [photo, setPhoto] = useState<PhotoState>({ state: "none" });
   const [downloading, setDownloading] = useState(false);
 
@@ -194,22 +196,24 @@ const DigilockerDetailsView: React.FC<{ row: VerificationReviewRow }> = ({ row }
       </div>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <div className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-          {photo.state === "ready" ? (
-            <img src={photo.url} alt="Aadhaar photo" className="h-full w-full object-cover" />
-          ) : photo.state === "loading" ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
-            <div className="flex flex-col items-center gap-1 px-2 text-center text-xs text-muted-foreground">
-              <UserRound className="h-8 w-8" aria-hidden />
-              {photo.state === "error" ? "Photo couldn't load" : "No photo"}
-            </div>
-          )}
-        </div>
+        {(isAadhaar || details.hasPhoto) && (
+          <div className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+            {photo.state === "ready" ? (
+              <img src={photo.url} alt="Aadhaar photo" className="h-full w-full object-cover" />
+            ) : photo.state === "loading" ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
+              <div className="flex flex-col items-center gap-1 px-2 text-center text-xs text-muted-foreground">
+                <UserRound className="h-8 w-8" aria-hidden />
+                {photo.state === "error" ? "Photo couldn't load" : "No photo"}
+              </div>
+            )}
+          </div>
+        )}
 
         <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Aadhaar name</dt>
+            <dt className="text-muted-foreground">{isAadhaar ? "Aadhaar name" : "DigiLocker name"}</dt>
             <dd className="break-words font-medium">{details.name || "—"}</dd>
           </div>
           <div>
@@ -222,16 +226,24 @@ const DigilockerDetailsView: React.FC<{ row: VerificationReviewRow }> = ({ row }
           </div>
           <div>
             <dt className="text-muted-foreground">Gender</dt>
-            <dd className="font-medium">{GENDER_LABELS[details.gender] ?? "—"}</dd>
+            <dd className="font-medium">{(details.gender && GENDER_LABELS[details.gender]) || "—"}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Aadhaar</dt>
-            <dd className="font-medium tabular-nums">XXXX XXXX {details.last4}</dd>
+            <dt className="text-muted-foreground">{row.typeLabel}</dt>
+            <dd className="font-medium tabular-nums">
+              {!details.last4 ? "—" : isAadhaar ? `XXXX XXXX ${details.last4}` : `Ending in ${details.last4}`}
+            </dd>
           </div>
+          {details.issuer && (
+            <div>
+              <dt className="text-muted-foreground">Issued by</dt>
+              <dd className="break-words font-medium">{details.issuer}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
-      {details.hasXml ? (
+      {!isAadhaar ? null : details.hasXml ? (
         <Button type="button" variant="outline" onClick={downloadXml} disabled={downloading}>
           {downloading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
@@ -315,8 +327,8 @@ const ViewDialog: React.FC<{ row: VerificationReviewRow | null; onClose: () => v
   const [sides, setSides] = useState<Partial<Record<VerificationSide, SideState>>>({});
 
   useEffect(() => {
-    // DigiLocker rows show their details instead (the front is XML, not an image).
-    if (!row || row.source === "digilocker") return;
+    // A DigiLocker Aadhaar shows its details instead (its front is XML, not an image).
+    if (!row || (row.source === "digilocker" && row.type === "aadhaar")) return;
     const controller = new AbortController();
     const urls: string[] = [];
     setSides(Object.fromEntries(row.sides.map((s) => [s, { state: "loading" }])));
@@ -356,7 +368,7 @@ const ViewDialog: React.FC<{ row: VerificationReviewRow | null; onClose: () => v
           </DialogDescription>
         </DialogHeader>
         {row?.source === "digilocker" && <DigilockerDetailsView row={row} />}
-        {row && row.source !== "digilocker" && (
+        {row && !(row.source === "digilocker" && row.type === "aadhaar") && (
           <div className={cn("grid gap-6", twoSided && "lg:grid-cols-2")}>
             {row.sides.map((side) => (
               <SidePreview
