@@ -33,10 +33,11 @@ const pickRow = (r: VerificationReviewRow): VerificationReviewRow => ({
   ...(r.source === "digilocker" && r.digilocker
     ? {
         digilocker: {
-          name: r.digilocker.name,
-          dob: r.digilocker.dob,
-          gender: r.digilocker.gender,
-          last4: r.digilocker.last4,
+          name: r.digilocker.name ?? "",
+          dob: r.digilocker.dob ?? "",
+          ...(r.digilocker.gender ? { gender: r.digilocker.gender } : {}),
+          last4: r.digilocker.last4 ?? "",
+          ...(r.digilocker.issuer ? { issuer: r.digilocker.issuer } : {}),
           hasPhoto: r.digilocker.hasPhoto === true,
           hasXml: r.digilocker.hasXml === true,
         },

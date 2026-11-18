@@ -15,13 +15,17 @@ export type VerificationFileSide = VerificationSide | "photo";
 
 export type VerificationSource = "manual" | "digilocker";
 
-/** DigiLocker rows only. `name` is the Aadhaar name; the row's `name` is the profile name. */
+/** DigiLocker rows only. `name` is the DigiLocker name; the row's `name` is the profile name. */
 export interface VerificationDigilockerDetails {
+  /** '' when DigiLocker gave none. */
   name: string;
-  /** YYYY-MM-DD */
+  /** YYYY-MM-DD, or '' */
   dob: string;
-  gender: "M" | "F" | "T";
+  gender?: "M" | "F" | "T";
+  /** Last 4 characters of the document number, or ''. */
   last4: string;
+  /** Issuing body, e.g. "Income Tax Department". */
+  issuer?: string;
   hasPhoto: boolean;
   /** The e-Aadhaar XML is stored (it is not when it held a full Aadhaar number). */
   hasXml: boolean;
