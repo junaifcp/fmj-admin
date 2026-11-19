@@ -37,6 +37,7 @@ import { ArrowLeft, ChevronDown, ExternalLink, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/auth";
 import { PATHS } from "@/routes/paths";
+import { HiringAccountActions } from "@/components/admin/hiring/HiringAccountActions";
 import {
   CompanyVerificationBadge,
   ReasonDialog,
@@ -75,6 +76,7 @@ type ActionKind =
 const ACTION_LABELS: Record<string, string> = {
   "employer.suspend": "Deactivated",
   "employer.delete": "Deleted",
+  "employer.restore": "Restored",
   "employer.reactivate": "Reactivated",
   "employer.revoke_sessions": "Signed out everywhere",
   "employer.reonboard": "Sent back to onboarding",
@@ -401,6 +403,16 @@ const EmployerDetail: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
+              {profile.deletedAt && (
+                <HiringAccountActions
+                  kind="employer"
+                  id={id}
+                  email={user.email}
+                  isActive={profile.isActive}
+                  deletedAt={profile.deletedAt}
+                  onDone={() => setReloadKey((n) => n + 1)}
+                />
+              )}
               {!profile.deletedAt && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

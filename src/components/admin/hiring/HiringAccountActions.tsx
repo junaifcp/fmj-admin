@@ -1,7 +1,7 @@
 // src/components/admin/hiring/HiringAccountActions.tsx
-// 3-dot actions for a recruiter or employer row: Deactivate / Reactivate and
-// Delete (soft delete). Every action asks for a reason; Delete also asks the
-// admin to type the account's email.
+// 3-dot actions for a recruiter or employer: Deactivate / Reactivate and
+// Delete (soft delete), or Restore for a deleted account. Every action asks for
+// a reason; Delete also asks the admin to type the account's email.
 import React, { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { employerAdminApi } from "@/api/employerAdmin";
 import { useToast } from "@/hooks/use-toast";
 
 type Kind = "recruiter" | "employer";
-type Action = "deactivate" | "reactivate" | "delete";
+type Action = "deactivate" | "reactivate" | "delete" | "restore";
 
 const api = (kind: Kind) => (kind === "recruiter" ? recruiterAdminApi : employerAdminApi);
 
@@ -37,10 +37,6 @@ export const HiringAccountActions: React.FC<{
   const [action, setAction] = useState<Action | null>(null);
   const [typedEmail, setTypedEmail] = useState("");
 
-  if (deletedAt) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-
   const open = (a: Action) => {
     setTypedEmail("");
     setAction(a);
@@ -54,11 +50,14 @@ export const HiringAccountActions: React.FC<{
       if (action === "deactivate") await api(kind).setActive(id, false, reason);
       if (action === "reactivate") await api(kind).setActive(id, true, reason);
       if (action === "delete") await api(kind).remove(id, reason);
+      if (action === "restore") await api(kind).restore(id, reason);
       toast({
         title:
           action === "delete"
             ? `${email} deleted`
-            : action === "deactivate"
+            : action === "restore"
+              ? `${email} restored`
+              : action === "deactivate"
               ? `${email} deactivated`
               : `${email} reactivated`,
         description: "Recorded in the activity log",
@@ -106,6 +105,12 @@ export const HiringAccountActions: React.FC<{
       destructive: true,
       required: true,
     },
+    restore: {
+      title: `Restore ${kind}`,
+      description: `${email} can sign in again. Their jobs closed at delete stay closed; they can reopen them.`,
+      confirm: "Restore",
+      required: true,
+    },
   };
   const d = action ? dialogs[action] : null;
 
@@ -118,15 +123,21 @@ export const HiringAccountActions: React.FC<{
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {isActive ? (
-            <DropdownMenuItem onSelect={() => open("deactivate")}>Deactivate…</DropdownMenuItem>
+          {deletedAt ? (
+            <DropdownMenuItem onSelect={() => open("restore")}>Restore…</DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onSelect={() => open("reactivate")}>Reactivate…</DropdownMenuItem>
+            <>
+              {isActive ? (
+                <DropdownMenuItem onSelect={() => open("deactivate")}>Deactivate…</DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={() => open("reactivate")}>Reactivate…</DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onSelect={() => open("delete")}>
+                Delete…
+              </DropdownMenuItem>
+            </>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onSelect={() => open("delete")}>
-            Delete…
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
