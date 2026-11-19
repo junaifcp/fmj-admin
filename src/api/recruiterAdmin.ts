@@ -97,6 +97,11 @@ export const recruiterAdminApi = {
     await client.delete(`/${encodeURIComponent(id)}`, { data: { reason } });
   },
 
+  /** Undo a delete (reason required, 5+ chars): the recruiter can sign in again. */
+  async restore(id: string, reason: string): Promise<void> {
+    await client.post(`/${encodeURIComponent(id)}/restore`, { reason });
+  },
+
   async verifyProfile(id: string, reason: string): Promise<void> {
     await client.post(`/${encodeURIComponent(id)}/verify-profile`, { reason });
   },

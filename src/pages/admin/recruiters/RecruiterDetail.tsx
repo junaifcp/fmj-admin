@@ -56,6 +56,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/auth";
 import { PATHS } from "@/routes/paths";
+import { HiringAccountActions } from "@/components/admin/hiring/HiringAccountActions";
 import {
   CompanyVerificationBadge,
   ReasonDialog,
@@ -82,6 +83,7 @@ const ACTION_LABELS: Record<string, string> = {
   "recruiter.suspend": "Deactivated",
   "recruiter.reactivate": "Reactivated",
   "recruiter.delete": "Deleted",
+  "recruiter.restore": "Restored",
   "recruiter.reonboard": "Sent back to onboarding",
   "recruiter.verify_profile": "Profile marked verified",
   "user.role_change": "Role changed",
@@ -408,6 +410,16 @@ const RecruiterDetail: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
+              {profile.deletedAt && (
+                <HiringAccountActions
+                  kind="recruiter"
+                  id={id}
+                  email={user.email}
+                  isActive={profile.isActive}
+                  deletedAt={profile.deletedAt}
+                  onDone={() => setReloadKey((n) => n + 1)}
+                />
+              )}
               {!profile.deletedAt && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

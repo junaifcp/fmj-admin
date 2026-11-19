@@ -124,6 +124,10 @@ export const employerAdminApi = {
   async remove(id: string, reason: string) {
     await client.delete(`/${enc(id)}`, { data: { reason } });
   },
+  /** Undo a delete (reason required, 5+ chars): the employer can sign in again. */
+  async restore(id: string, reason: string) {
+    await client.post(`/${enc(id)}/restore`, { reason });
+  },
   async revokeSessions(id: string, reason: string) {
     await client.post(`/${enc(id)}/revoke-sessions`, { reason });
   },
