@@ -2,11 +2,14 @@
 // Candidate verification approval: one submitted identity document.
 // The API never sends a file key or URL; files are streamed by id.
 
-/** Stored status. The screen labels `verified` as Approved. */
-export type VerificationReviewStatus = "pending" | "verified";
+/** Stored status. The screen labels `verified` as Approved. `rejected`: 2026-11-26. */
+export type VerificationReviewStatus = "pending" | "verified" | "rejected";
 
 /** The list filter sent as `status`. */
-export type VerificationReviewFilter = "pending" | "verified" | "all";
+export type VerificationReviewFilter = "pending" | "verified" | "rejected" | "all";
+
+/** Same limit as the server (REJECT_REASON_MAX). */
+export const VERIFICATION_REJECT_REASON_MAX = 200;
 
 export type VerificationSide = "front" | "back";
 
@@ -45,6 +48,10 @@ export interface VerificationReviewRow {
   backFileName?: string;
   source: VerificationSource;
   digilocker?: VerificationDigilockerDetails;
+  /** Rejected rows only. */
+  reviewedAt?: string;
+  /** Rejected rows with a reason only. The candidate sees it. */
+  rejectReason?: string;
 }
 
 export interface VerificationReviewList {
