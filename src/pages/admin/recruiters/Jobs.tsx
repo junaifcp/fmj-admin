@@ -86,7 +86,7 @@ const SELECTS: { key: (typeof FILTER_KEYS)[number]; label: string; options: [str
   {
     key: "type",
     label: "Type",
-    options: [["full-time", "Full-time"], ["part-time", "Part-time"], ["contract", "Contract"], ["internship", "Internship"]],
+    options: [["full-time", "Full-time"], ["part-time", "Part-time"], ["contract", "Contract"], ["internship", "Internship"], ["work-from-home", "Work from home"]],
   },
   { key: "postedByRole", label: "Posted by", options: [["recruiter", "Recruiters"], ["employer", "Employers"]] },
   {
