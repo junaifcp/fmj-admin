@@ -6,12 +6,14 @@
 // what DigiLocker said beside the profile name. PAN and driving licence
 // (2026-11-18) also show their stored file; an Aadhaar (paused) shows its photo
 // and XML download. DigiLocker rows are verified already: no Approve.
+// Reject (2026-11-26): pending manual rows also get Reject, with an optional
+// reason the candidate sees; they then upload again. A Rejected filter lists them.
 // Decisions: docs/candidate-verification-approval/locked-decisions.md,
 // docs/digilocker-verification/locked-decisions.md (Admin UI)
 import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import { CheckCircle2, Download, Eye, Loader2, ShieldCheck, UserRound } from "lucide-react";
+import { CheckCircle2, Download, Eye, Loader2, ShieldCheck, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,9 +30,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { verificationReviewApi } from "@/api/verificationReview";
 import { CareerProofsTab } from "./CareerProofsTab";
+import { VERIFICATION_REJECT_REASON_MAX } from "@/types/verificationReview";
 import type {
   VerificationDigilockerDetails,
   VerificationReviewFilter,
@@ -55,20 +60,30 @@ import type {
 const PAGE_SIZE = 20;
 const CONFIRM_TEXT = "Approve this document? This candidate will show as verified.";
 
+const REJECT_PRESETS = [
+  "Photo is blurry or unreadable",
+  "Wrong document type",
+  "Name doesn't match the profile",
+  "Front or back is missing",
+  "Document has expired",
+];
+
 const FILTERS: { value: VerificationReviewFilter; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "verified", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
   { value: "all", label: "All" },
 ];
 
 const EMPTY_TEXT: Record<VerificationReviewFilter, string> = {
   pending: "No pending verifications.",
   verified: "No approved verifications.",
+  rejected: "No rejected verifications.",
   all: "No verifications yet.",
 };
 
 const isFilter = (v: string | null): v is VerificationReviewFilter =>
-  v === "pending" || v === "verified" || v === "all";
+  v === "pending" || v === "verified" || v === "rejected" || v === "all";
 
 const rowKey = (r: VerificationReviewRow) => `${r.candidateId}:${r.type}`;
 
@@ -93,12 +108,12 @@ const StatusPill: React.FC<{ status: VerificationReviewRow["status"] }> = ({ sta
   <span
     className={cn(
       "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
-      status === "verified"
-        ? "bg-primary/10 text-primary"
-        : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"
+      status === "verified" && "bg-primary/10 text-primary",
+      status === "pending" && "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+      status === "rejected" && "bg-destructive/10 text-destructive"
     )}
   >
-    {status === "verified" ? "Approved" : "Pending"}
+    {status === "verified" ? "Approved" : status === "rejected" ? "Rejected" : "Pending"}
   </span>
 );
 
@@ -407,6 +422,10 @@ const IdDocumentsSection: React.FC = () => {
   const [viewing, setViewing] = useState<VerificationReviewRow | null>(null);
   const [confirming, setConfirming] = useState<VerificationReviewRow | null>(null);
   const [approvingKey, setApprovingKey] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<VerificationReviewRow | null>(null);
+  const [reason, setReason] = useState("");
+  const [rejectingKey, setRejectingKey] = useState<string | null>(null);
+  const busy = approvingKey !== null || rejectingKey !== null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -447,32 +466,59 @@ const IdDocumentsSection: React.FC = () => {
     [params, setParams]
   );
 
+  /** After approve or reject: off the Pending list (no reload), or updated in place on the others. */
+  const applyReviewed = (key: string, updated: VerificationReviewRow) => {
+    if (filter === "pending") {
+      const remaining = rows.filter((r) => rowKey(r) !== key);
+      setRows(remaining);
+      setTotal((t) => Math.max(0, t - 1));
+      if (remaining.length === 0 && total - 1 > 0) {
+        if (page > 1) goToPage(page - 1);
+        else setReload((n) => n + 1);
+      }
+    } else {
+      setRows((prev) => prev.map((r) => (rowKey(r) === key ? updated : r)));
+    }
+  };
+
   const approve = async () => {
     const row = confirming;
-    if (!row || approvingKey) return;
+    if (!row || busy) return;
     const key = rowKey(row);
     setApprovingKey(key);
     try {
       const updated = await verificationReviewApi.approve(row.candidateId, row.type);
       toast.success("Document approved.");
-      if (filter === "pending") {
-        // It is no longer pending: drop it here instead of reloading the page.
-        const remaining = rows.filter((r) => rowKey(r) !== key);
-        setRows(remaining);
-        setTotal((t) => Math.max(0, t - 1));
-        if (remaining.length === 0 && total - 1 > 0) {
-          if (page > 1) goToPage(page - 1);
-          else setReload((n) => n + 1);
-        }
-      } else {
-        setRows((prev) => prev.map((r) => (rowKey(r) === key ? updated : r)));
-      }
+      applyReviewed(key, updated);
       setConfirming(null);
     } catch (e) {
       toast.error((e as Error).message || "Could not approve this document.");
       setConfirming(null);
     } finally {
       setApprovingKey(null);
+    }
+  };
+
+  const openReject = (row: VerificationReviewRow) => {
+    setReason("");
+    setRejecting(row);
+  };
+
+  const reject = async () => {
+    const row = rejecting;
+    if (!row || busy) return;
+    const key = rowKey(row);
+    setRejectingKey(key);
+    try {
+      const updated = await verificationReviewApi.reject(row.candidateId, row.type, reason);
+      toast.success("Document rejected. The candidate can upload it again.");
+      applyReviewed(key, updated);
+      setRejecting(null);
+    } catch (e) {
+      toast.error((e as Error).message || "Could not reject this document.");
+      setRejecting(null);
+    } finally {
+      setRejectingKey(null);
     }
   };
 
@@ -484,7 +530,8 @@ const IdDocumentsSection: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold">Verification</h1>
         <p className="text-sm text-muted-foreground">
-          Identity documents candidates submitted. Approving one shows the candidate as verified.
+          Identity documents candidates submitted. Approving one shows the candidate as verified;
+          rejecting one asks the candidate to upload it again.
         </p>
       </div>
 
@@ -508,7 +555,7 @@ const IdDocumentsSection: React.FC = () => {
                 <TableHead>Source</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[13rem] text-right">Actions</TableHead>
+                <TableHead className="w-[20rem] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -549,7 +596,7 @@ const IdDocumentsSection: React.FC = () => {
                 !error &&
                 rows.map((row) => {
                   const key = rowKey(row);
-                  const busy = approvingKey === key;
+                  const reviewable = row.status === "pending" && row.source !== "digilocker";
                   return (
                     <TableRow key={key}>
                       <TableCell className="min-w-[200px]">
@@ -574,8 +621,11 @@ const IdDocumentsSection: React.FC = () => {
                       <TableCell className="whitespace-nowrap text-sm">
                         {formatDate(row.submittedAt)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-w-[16rem]">
                         <StatusPill status={row.status} />
+                        {row.status === "rejected" && row.rejectReason && (
+                          <div className="mt-1 break-words text-xs text-destructive">{row.rejectReason}</div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">
@@ -589,25 +639,42 @@ const IdDocumentsSection: React.FC = () => {
                             <Eye className="mr-1.5 h-4 w-4" />
                             View
                           </Button>
-                          {row.status === "pending" && row.source !== "digilocker" ? (
-                            // Opens the confirm dialog; nothing is sent until Approve there.
-                            <Button
-                              size="sm"
-                              className="w-[6.5rem]"
-                              disabled={approvingKey !== null}
-                              onClick={() => setConfirming(row)}
-                              aria-label={`Approve ${row.typeLabel} of ${row.name || "candidate"}`}
-                            >
-                              {busy ? (
-                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                              ) : (
-                                <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                              )}
-                              Approve
-                            </Button>
+                          {reviewable ? (
+                            <>
+                              {/* Each opens its dialog; nothing is sent until confirmed there. */}
+                              <Button
+                                size="sm"
+                                className="w-[6.5rem]"
+                                disabled={busy}
+                                onClick={() => setConfirming(row)}
+                                aria-label={`Approve ${row.typeLabel} of ${row.name || "candidate"}`}
+                              >
+                                {approvingKey === key ? (
+                                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                                )}
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-[6rem] text-destructive hover:text-destructive"
+                                disabled={busy}
+                                onClick={() => openReject(row)}
+                                aria-label={`Reject ${row.typeLabel} of ${row.name || "candidate"}`}
+                              >
+                                {rejectingKey === key ? (
+                                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <XCircle className="mr-1.5 h-4 w-4" />
+                                )}
+                                Reject
+                              </Button>
+                            </>
                           ) : (
-                            // Approved rows have no Approve; keep View lined up with the rows above.
-                            <span aria-hidden className="w-[6.5rem]" />
+                            // Reviewed and DigiLocker rows have no actions; keep View lined up.
+                            <span aria-hidden className="w-[13rem]" />
                           )}
                         </div>
                       </TableCell>
@@ -667,7 +734,7 @@ const IdDocumentsSection: React.FC = () => {
       <AlertDialog
         open={confirming !== null}
         onOpenChange={(open) => {
-          if (!open && !approvingKey) setConfirming(null);
+          if (!open && !busy) setConfirming(null);
         }}
       >
         <AlertDialogContent>
@@ -676,9 +743,9 @@ const IdDocumentsSection: React.FC = () => {
             <AlertDialogDescription>{CONFIRM_TEXT}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={approvingKey !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={approvingKey !== null}
+              disabled={busy}
               onClick={(e) => {
                 // Keep the dialog open until the request finishes.
                 e.preventDefault();
@@ -691,6 +758,63 @@ const IdDocumentsSection: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={rejecting !== null}
+        onOpenChange={(open) => {
+          if (!open && !busy) setRejecting(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Reject {rejecting?.typeLabel ?? "document"}
+              {rejecting?.name ? ` · ${rejecting.name}` : ""}
+            </DialogTitle>
+            <DialogDescription>
+              The candidate sees this document as rejected and can upload it again. A reason is
+              optional; if you give one, they see it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {REJECT_PRESETS.map((p) => (
+                <Button
+                  key={p}
+                  type="button"
+                  variant={reason === p ? "secondary" : "outline"}
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => setReason(p)}
+                >
+                  {p}
+                </Button>
+              ))}
+            </div>
+            <Textarea
+              aria-label="Reason (optional)"
+              rows={3}
+              maxLength={VERIFICATION_REJECT_REASON_MAX}
+              value={reason}
+              disabled={busy}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Reason (optional)"
+            />
+            <p className="text-xs text-muted-foreground">
+              {reason.length}/{VERIFICATION_REJECT_REASON_MAX}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejecting(null)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => void reject()} disabled={busy}>
+              {rejectingKey !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

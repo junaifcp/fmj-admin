@@ -1,5 +1,5 @@
 // src/api/verificationReview.ts
-// Candidate verification approval: list, approve, and the admin file stream.
+// Candidate verification approval: list, approve, reject, and the admin file stream.
 import { createApiClient } from "./apiClient";
 import { API_BASE_ADMIN } from "./admin";
 import { getAuthToken, clearTokenCache } from "@/utils/auth";
@@ -24,7 +24,7 @@ const pickRow = (r: VerificationReviewRow): VerificationReviewRow => ({
   email: r.email,
   type: r.type,
   typeLabel: r.typeLabel,
-  status: r.status,
+  status: r.status === "verified" || r.status === "rejected" ? r.status : "pending",
   submittedAt: r.submittedAt,
   sides: r.sides,
   frontFileName: r.frontFileName,
@@ -43,6 +43,8 @@ const pickRow = (r: VerificationReviewRow): VerificationReviewRow => ({
         },
       }
     : {}),
+  ...(r.status === "rejected" && r.reviewedAt ? { reviewedAt: r.reviewedAt } : {}),
+  ...(r.status === "rejected" && r.rejectReason ? { rejectReason: r.rejectReason } : {}),
 });
 
 /** A failed blob request carries its JSON error as a Blob; read the server's message. */
@@ -75,6 +77,16 @@ export const verificationReviewApi = {
   async approve(candidateId: string, type: string): Promise<VerificationReviewRow> {
     const res = await client.post(
       `/${encodeURIComponent(candidateId)}/${encodeURIComponent(type)}/approve`
+    );
+    return pickRow(res.data.data);
+  },
+
+  /** Rejects a pending manual document. The reason is optional; the candidate sees it. */
+  async reject(candidateId: string, type: string, reason?: string): Promise<VerificationReviewRow> {
+    const trimmed = reason?.trim();
+    const res = await client.post(
+      `/${encodeURIComponent(candidateId)}/${encodeURIComponent(type)}/reject`,
+      trimmed ? { reason: trimmed } : {}
     );
     return pickRow(res.data.data);
   },
