@@ -1,6 +1,7 @@
 // src/api/employerAdmin.ts
 // Employer admin: /api/admin/employers/*.
 import { createApiClient } from "./apiClient";
+import { downloadCsv, type DownloadResult } from "./download";
 import { getAuthToken, clearTokenCache } from "@/utils/auth";
 import { apiBaseUrl } from "@/config/env";
 import type { AdminActivityRow, AdminNoteRow, Paged } from "@/types/recruiterAdmin";
@@ -85,15 +86,10 @@ export const employerAdminApi = {
   },
 
   /** CSV of the selected ids, or of every employer matching the filters. */
-  async exportCsv(ids: string[], filters: EmployerListFilters): Promise<void> {
+  exportCsv(ids: string[], filters: EmployerListFilters, opts?: Opts): Promise<DownloadResult> {
     const qs = ids.length ? toParams({ ids: ids.join(",") }) : toParams({ ...filters });
-    const res = await client.request({ method: "get", url: `/export?${qs}`, responseType: "blob" } as any);
-    const url = window.URL.createObjectURL(res.data as Blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `employers-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const day = new Date().toISOString().split("T")[0];
+    return downloadCsv(client, qs ? `/export?${qs}` : "/export", `employers-${day}.csv`, opts);
   },
 
   async getDetail(id: string, opts?: Opts): Promise<EmployerDetail> {

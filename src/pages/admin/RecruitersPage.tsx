@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, RefreshCw, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Download, RefreshCw, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   CompanyVerificationBadge,
@@ -114,6 +114,7 @@ const RecruitersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   // Debounce the search box.
   useEffect(() => {
@@ -175,16 +176,34 @@ const RecruitersPage: React.FC = () => {
     setJoinedTo("");
   };
 
+  // Ticked rows, or (none ticked) every recruiter matching the search + filters.
+  const total = result?.pagination.total ?? 0;
+  const exportTotal = selected.length || total;
+  const exportLabel = selected.length
+    ? `Export (${selected.length} selected)`
+    : `${hasFilters ? "Export filtered" : "Export all"} (${total.toLocaleString("en-IN")})`;
+
   const handleExport = async () => {
+    if (exporting || exportTotal === 0) return;
+    setExporting(true);
+    toast({
+      title: "Preparing export",
+      description: `${exportTotal.toLocaleString("en-IN")} recruiters. The CSV downloads when it's ready.`,
+    });
     try {
-      await exportRecruitersCSV(selected);
-      toast({ title: "Export started", description: "Your CSV file will download shortly" });
+      const { rows } = await exportRecruitersCSV(selected, query);
+      toast({
+        title: "Export downloaded",
+        description: `${(rows ?? exportTotal).toLocaleString("en-IN")} recruiters`,
+      });
     } catch (err) {
       toast({
         title: "Export failed",
         description: err instanceof Error ? err.message : "Unknown error",
         variant: "destructive",
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -232,10 +251,14 @@ const RecruitersPage: React.FC = () => {
                 onClick={handleExport}
                 size="sm"
                 variant="outline"
-                disabled={selected.length === 0}
+                disabled={exporting || loading || exportTotal === 0}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export ({selected.length})
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {exporting ? "Exporting…" : exportLabel}
               </Button>
             </div>
           </div>

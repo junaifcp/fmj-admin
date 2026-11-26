@@ -333,11 +333,19 @@ export interface CvDropFilters {
 
 // ---- Employer admin 8.2: Career pages ----
 
+/**
+ * Every employer with a company. The link (slug) is created only when the
+ * employer opens their Career page screen, so `slug`/`publicUrl` are null and
+ * `hasLink` false until then.
+ */
 export interface CareerPageRow {
   employer: { _id: string; email: string; name: string };
   company: { _id: string; name: string; verified: CompanyVerification; hasLogo: boolean; hasAbout: boolean } | null;
-  slug: string;
-  publicUrl: string;
+  slug: string | null;
+  publicUrl: string | null;
+  hasLink: boolean;
+  /** Employer sign-up (Employer.createdAt); the list's order, newest first. */
+  signedUpAt: string | null;
   enabled: boolean;
   suspended: boolean;
   listedJobs: number;
@@ -349,6 +357,7 @@ export interface CareerPageFilters {
   enabled?: "true" | "false";
   companyVerified?: CompanyVerification;
   hasJobs?: "true" | "false";
+  hasLink?: "true" | "false";
   q?: string;
 }
 

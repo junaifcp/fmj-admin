@@ -7,6 +7,7 @@ import {
   activateUserPlan,
   activateResumePayment,
   getPlans,
+  type UserListFilters,
 } from "@/api/admin";
 import { AdminUser, PaginationResponse, AdminPlan } from "@/types/admin";
 import { Location } from "@/types/location";
@@ -92,7 +93,12 @@ const UsersPage: React.FC = () => {
   const [filterJobTitles, setFilterJobTitles] = useState<string[]>([]);
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
-  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  // What the list (and Export) uses: set on Apply, not while typing in the panel.
+  const [appliedFilters, setAppliedFilters] = useState<
+    UserListFilters | undefined
+  >(undefined);
+  const hasActiveFilters = !!appliedFilters;
+  const [exporting, setExporting] = useState(false);
 
   // Delete user dialog state
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
@@ -128,50 +134,33 @@ const UsersPage: React.FC = () => {
 
   const { toast } = useToast();
 
+  /** The filter panel's current values (undefined when nothing is set). */
+  const panelFilters = (): UserListFilters | undefined => {
+    const filters: UserListFilters = {};
+    if (filterLocation && filterLocation.lat && filterLocation.lng) {
+      filters.location = {
+        lat: filterLocation.lat,
+        lng: filterLocation.lng,
+        radius: filterRadius,
+      };
+    }
+    if (filterSkills.length > 0) filters.skills = filterSkills;
+    if (filterJobTitles.length > 0) filters.jobTitles = filterJobTitles;
+    if (filterDateFrom || filterDateTo) {
+      filters.dateRange = { from: filterDateFrom, to: filterDateTo };
+    }
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  };
+
   const fetchUsers = async (
     page = 1,
     searchTerm = "",
-    applyFilters = false
+    filters: UserListFilters | undefined = appliedFilters
   ) => {
     try {
       setLoading(true);
       setError(null);
-
-      // Build filters object
-      const filters: any = {};
-
-      if (applyFilters) {
-        if (filterLocation && filterLocation.lat && filterLocation.lng) {
-          filters.location = {
-            lat: filterLocation.lat,
-            lng: filterLocation.lng,
-            radius: filterRadius, // Use selected radius
-          };
-        }
-
-        if (filterSkills.length > 0) {
-          filters.skills = filterSkills;
-        }
-
-        if (filterJobTitles.length > 0) {
-          filters.jobTitles = filterJobTitles;
-        }
-
-        if (filterDateFrom || filterDateTo) {
-          filters.dateRange = {
-            from: filterDateFrom,
-            to: filterDateTo,
-          };
-        }
-      }
-
-      const data = await getUsers(
-        page,
-        20,
-        searchTerm,
-        Object.keys(filters).length > 0 ? filters : undefined
-      );
-      console.log("data", data);
+      const data = await getUsers(page, 20, searchTerm, filters);
       setUsers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load users");
@@ -182,12 +171,13 @@ const UsersPage: React.FC = () => {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      fetchUsers(1, search, hasActiveFilters);
+      fetchUsers(1, search, appliedFilters);
       setCurrentPage(1);
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [search, hasActiveFilters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, appliedFilters]);
 
   const openDeleteDialog = (user: AdminUser) => {
     setUserToDelete(user);
@@ -220,7 +210,7 @@ const UsersPage: React.FC = () => {
       setSelectedUsers((prev) => prev.filter((id) => id !== userToDelete._id));
       setUserToDelete(null);
       setDeleteConfirmText("");
-      fetchUsers(currentPage, search, hasActiveFilters);
+      fetchUsers(currentPage, search, appliedFilters);
     } catch (error) {
       setDeleteError(
         error instanceof Error ? error.message : "Couldn't delete this user."
@@ -230,12 +220,29 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  // Ticked rows, or (none ticked) every candidate matching the search + applied filters.
+  const exportTotal = selectedUsers.length || users?.pagination.total || 0;
+  const exportLabel = selectedUsers.length
+    ? `Export (${selectedUsers.length} selected)`
+    : `${hasActiveFilters || search ? "Export filtered" : "Export all"} (${(
+        users?.pagination.total ?? 0
+      ).toLocaleString("en-IN")})`;
+
   const handleExportCSV = async () => {
+    if (exporting || exportTotal === 0) return;
+    setExporting(true);
+    toast({
+      title: "Preparing export",
+      description: `${exportTotal.toLocaleString("en-IN")} candidates. The CSV downloads when it's ready.`,
+    });
     try {
-      await exportUsersCSV(selectedUsers);
+      const { rows } = await exportUsersCSV(selectedUsers, {
+        search,
+        filters: appliedFilters,
+      });
       toast({
-        title: "Export started",
-        description: "Your CSV file will download shortly",
+        title: "Export downloaded",
+        description: `${(rows ?? exportTotal).toLocaleString("en-IN")} candidates`,
       });
     } catch (error) {
       toast({
@@ -243,6 +250,8 @@ const UsersPage: React.FC = () => {
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -341,7 +350,7 @@ const UsersPage: React.FC = () => {
 
       // Refresh user list
       setTimeout(() => {
-        fetchUsers(currentPage, search, hasActiveFilters);
+        fetchUsers(currentPage, search, appliedFilters);
         setIsActivatePlanModalOpen(false);
       }, 2000);
     } catch (error) {
@@ -412,7 +421,7 @@ const UsersPage: React.FC = () => {
       });
 
       setTimeout(() => {
-        fetchUsers(currentPage, search, hasActiveFilters);
+        fetchUsers(currentPage, search, appliedFilters);
         setIsResumePaymentModalOpen(false);
       }, 1200);
     } catch (error) {
@@ -445,9 +454,9 @@ const UsersPage: React.FC = () => {
 
   // Filter handlers
   const handleApplyFilters = () => {
-    setHasActiveFilters(true);
-    setCurrentPage(1);
-    fetchUsers(1, search, true);
+    // A new object each time, so the list effect refetches (once) even if already active.
+    setAppliedFilters(panelFilters());
+    setSelectedUsers([]);
     toast({
       title: "Filters applied",
       description: "User list updated with filters",
@@ -461,9 +470,8 @@ const UsersPage: React.FC = () => {
     setFilterJobTitles([]);
     setFilterDateFrom("");
     setFilterDateTo("");
-    setHasActiveFilters(false);
-    setCurrentPage(1);
-    fetchUsers(1, search, false);
+    setAppliedFilters(undefined);
+    setSelectedUsers([]);
     toast({
       title: "Filters cleared",
       description: "Showing all users",
@@ -516,7 +524,7 @@ const UsersPage: React.FC = () => {
               </div>
               <Button
                 onClick={() =>
-                  fetchUsers(currentPage, search, hasActiveFilters)
+                  fetchUsers(currentPage, search, appliedFilters)
                 }
                 size="sm"
                 variant="outline"
@@ -530,10 +538,14 @@ const UsersPage: React.FC = () => {
                 onClick={handleExportCSV}
                 size="sm"
                 variant="outline"
-                disabled={selectedUsers.length === 0}
+                disabled={exporting || loading || exportTotal === 0}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export ({selectedUsers.length})
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {exporting ? "Exporting…" : exportLabel}
               </Button>
               <Button
                 onClick={toggleFilterPanel}
@@ -733,7 +745,7 @@ const UsersPage: React.FC = () => {
                       onClick={() => {
                         const newPage = currentPage - 1;
                         setCurrentPage(newPage);
-                        fetchUsers(newPage, search, hasActiveFilters);
+                        fetchUsers(newPage, search, appliedFilters);
                       }}
                       disabled={currentPage <= 1}
                     >
@@ -749,7 +761,7 @@ const UsersPage: React.FC = () => {
                       onClick={() => {
                         const newPage = currentPage + 1;
                         setCurrentPage(newPage);
-                        fetchUsers(newPage, search, hasActiveFilters);
+                        fetchUsers(newPage, search, appliedFilters);
                       }}
                       disabled={currentPage >= users.pagination.totalPages}
                     >

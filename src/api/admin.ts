@@ -28,6 +28,8 @@ import {
 } from "@/types/admin";
 
 import { createApiClient } from "./apiClient";
+import { downloadCsv, type DownloadResult } from "./download";
+import type { RecruiterListFilters } from "@/types/recruiterAdmin";
 import { getAuthToken, clearTokenCache } from "@/utils/auth";
 import { apiBaseUrl } from "@/config/env";
 
@@ -223,25 +225,21 @@ export const getMetrics = async (
 };
 
 // Users
-export const getUsers = async (
-  page = 1,
-  limit = 20,
-  search = "",
-  filters?: {
-    location?: { lat: number; lng: number; radius?: number };
-    skills?: string[];
-    jobTitles?: string[];
-    dateRange?: { from?: string; to?: string };
-  },
-  opts?: { signal?: AbortSignal; token?: string }
-): Promise<PaginationResponse<AdminUser>> => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(search && { search }),
-  });
+/** Candidate list filters, as the Users page applies them. */
+export type UserListFilters = {
+  location?: { lat: number; lng: number; radius?: number };
+  skills?: string[];
+  jobTitles?: string[];
+  dateRange?: { from?: string; to?: string };
+};
 
-  // Add location filter
+/** Query string for the Users list; the export sends the same one. */
+export const buildUserListParams = (
+  search = "",
+  filters?: UserListFilters
+): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
   if (filters?.location) {
     params.set("lat", filters.location.lat.toString());
     params.set("lng", filters.location.lng.toString());
@@ -249,25 +247,27 @@ export const getUsers = async (
       params.set("radius", filters.location.radius.toString());
     }
   }
-
-  // Add skills filter
   if (filters?.skills && filters.skills.length > 0) {
     params.set("skills", filters.skills.join(","));
   }
-
-  // Add job titles filter
   if (filters?.jobTitles && filters.jobTitles.length > 0) {
     params.set("jobTitles", filters.jobTitles.join(","));
   }
+  if (filters?.dateRange?.from) params.set("dateFrom", filters.dateRange.from);
+  if (filters?.dateRange?.to) params.set("dateTo", filters.dateRange.to);
+  return params;
+};
 
-  // Add date range filter
-  if (filters?.dateRange?.from) {
-    params.set("dateFrom", filters.dateRange.from);
-  }
-  if (filters?.dateRange?.to) {
-    params.set("dateTo", filters.dateRange.to);
-  }
-
+export const getUsers = async (
+  page = 1,
+  limit = 20,
+  search = "",
+  filters?: UserListFilters,
+  opts?: { signal?: AbortSignal; token?: string }
+): Promise<PaginationResponse<AdminUser>> => {
+  const params = buildUserListParams(search, filters);
+  params.set("page", page.toString());
+  params.set("limit", limit.toString());
   return get<PaginationResponse<AdminUser>>(
     `/users?${params.toString()}`,
     opts
@@ -282,33 +282,26 @@ export const deleteUser = async (
   await del<void>(`/users/${userId}`, opts);
 };
 
-export const exportUsersCSV = async (
+/**
+ * CSV of the ticked candidates, or (none ticked) of every candidate matching
+ * the search and filters. The server streams it; see api/download.ts.
+ */
+export const exportUsersCSV = (
   userIds: string[] = [],
-  opts?: { signal?: AbortSignal; token?: string }
-): Promise<void> => {
-  const params = userIds.length > 0 ? `?ids=${userIds.join(",")}` : "";
-  // use client.request to allow responseType blob
-  const res = await client.request({
-    method: "get",
-    url: `/users/export${params}`,
-    responseType: "blob",
-    signal: opts?.signal,
-    ...(opts?.token
-      ? { headers: { Authorization: `Bearer ${opts.token}` } as any }
-      : {}),
-  } as any);
-
-  if (res.status === 200) {
-    const blob = res.data as Blob;
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `users-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  } else {
-    throw new Error(`Export failed: HTTP ${res.status}`);
-  }
+  query: { search?: string; filters?: UserListFilters } = {},
+  opts?: { signal?: AbortSignal }
+): Promise<DownloadResult> => {
+  const params = userIds.length
+    ? new URLSearchParams({ ids: userIds.join(",") })
+    : buildUserListParams(query.search, query.filters);
+  const qs = params.toString();
+  const day = new Date().toISOString().split("T")[0];
+  return downloadCsv(
+    client,
+    qs ? `/users/export?${qs}` : "/users/export",
+    `candidates-${day}.csv`,
+    opts
+  );
 };
 
 // Resumes
@@ -721,35 +714,29 @@ export const bulkActionQualifications = (
   );
 
 // Recruiter Management (list, detail and actions: see api/recruiterAdmin.ts)
-export const exportRecruitersCSV = async (
+/**
+ * CSV of the ticked recruiters, or (none ticked) of every recruiter matching the
+ * list filters. The server streams it; see api/download.ts.
+ */
+export const exportRecruitersCSV = (
   recruiterIds: string[] = [],
-  opts?: { signal?: AbortSignal; token?: string }
-): Promise<void> => {
-  const params =
-    recruiterIds.length > 0
-      ? `?recruiterIds=${encodeURIComponent(recruiterIds.join(","))}`
-      : "";
-  const res = await client.request({
-    method: "get",
-    url: `/recruiters/export${params}`,
-    responseType: "blob",
-    signal: opts?.signal,
-    ...(opts?.token
-      ? { headers: { Authorization: `Bearer ${opts.token}` } as any }
-      : {}),
-  } as any);
-
-  if (res.status === 200) {
-    const blob = res.data as Blob;
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `recruiters-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  filters: RecruiterListFilters = {},
+  opts?: { signal?: AbortSignal }
+): Promise<DownloadResult> => {
+  const params = new URLSearchParams();
+  if (recruiterIds.length > 0) {
+    params.set("recruiterIds", recruiterIds.join(","));
   } else {
-    throw new Error(`Export failed: HTTP ${res.status}`);
+    for (const [k, v] of Object.entries(filters)) if (v) params.set(k, String(v));
   }
+  const qs = params.toString();
+  const day = new Date().toISOString().split("T")[0];
+  return downloadCsv(
+    client,
+    qs ? `/recruiters/export?${qs}` : "/recruiters/export",
+    `recruiters-${day}.csv`,
+    opts
+  );
 };
 
 // Payment/Plan Activation for Users

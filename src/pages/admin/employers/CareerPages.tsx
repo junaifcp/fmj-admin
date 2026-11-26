@@ -1,6 +1,9 @@
 // src/pages/admin/employers/CareerPages.tsx
 // Employer admin 8.2: every employer career page, to spot empty or risky pages
 // and turn them off. On/off uses the audited employer endpoint (6.1).
+// 2026-11-26: every employer with a company, newest sign-ups first. The link is
+// created only when the employer opens their Career page screen, so most rows
+// show "No link yet" (no public page, nothing to open or turn off).
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { careerPagesAdminApi, employerAdminApi } from "@/api/employerAdmin";
@@ -26,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CompanyVerificationBadge, ReasonDialog } from "@/components/admin/recruiters/RecruiterBits";
 import OwnerLink from "@/components/admin/hiring/OwnerLink";
 import { PATHS } from "@/routes/paths";
+import { safeFormatDate } from "@/utils/format";
 
 const PAGE_SIZE = 25;
 const ALL = "all";
@@ -38,7 +42,9 @@ const SELECTS: { key: keyof CareerPageFilters; label: string; options: [string, 
     options: [["verified", "Verified (indexed)"], ["pending", "Pending (not indexed)"], ["rejected", "Rejected (404)"]],
   },
   { key: "hasJobs", label: "Jobs", options: [["true", "Has listed jobs"], ["false", "No listed jobs"]] },
+  { key: "hasLink", label: "Link", options: [["true", "Has a link"], ["false", "No link yet"]] },
 ];
+const FILTER_KEYS = ["enabled", "companyVerified", "hasJobs", "hasLink", "q"] as const;
 
 const CareerPages: React.FC = () => {
   const { toast } = useToast();
@@ -72,7 +78,7 @@ const CareerPages: React.FC = () => {
 
   const filters: CareerPageFilters = useMemo(() => {
     const f: Record<string, string> = {};
-    for (const k of ["enabled", "companyVerified", "hasJobs", "q"]) {
+    for (const k of FILTER_KEYS) {
       const v = params.get(k);
       if (v) f[k] = v;
     }
@@ -138,7 +144,10 @@ const CareerPages: React.FC = () => {
             <div>
               <CardTitle>All career pages</CardTitle>
               <CardDescription>
-                {result ? `${result.pagination.total} pages` : "Loading..."} · Listed jobs follow the public 90-day rule
+                {result
+                  ? `${result.pagination.total} ${result.pagination.total === 1 ? "employer" : "employers"} with a company`
+                  : "Loading..."}{" "}
+                · Newest sign-ups first · Listed jobs follow the public 90-day rule
               </CardDescription>
             </div>
             <Button
@@ -186,7 +195,7 @@ const CareerPages: React.FC = () => {
                 size="sm"
                 onClick={() => {
                   setSearchInput("");
-                  update({ enabled: undefined, companyVerified: undefined, hasJobs: undefined, q: undefined });
+                  update(Object.fromEntries(FILTER_KEYS.map((k) => [k, undefined])));
                 }}
               >
                 <X className="h-4 w-4 mr-1" />
@@ -210,6 +219,7 @@ const CareerPages: React.FC = () => {
                   <TableRow>
                     <TableHead>Company</TableHead>
                     <TableHead>Employer</TableHead>
+                    <TableHead>Signed up</TableHead>
                     <TableHead>Page</TableHead>
                     <TableHead>Content</TableHead>
                     <TableHead className="text-right">Listed jobs</TableHead>
@@ -220,13 +230,13 @@ const CareerPages: React.FC = () => {
                 <TableBody>
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {hasFilters ? "No career pages match these filters" : "No career pages yet"}
                       </TableCell>
                     </TableRow>
                   )}
                   {rows.map((r) => (
-                    <TableRow key={r.slug}>
+                    <TableRow key={r.employer._id}>
                       <TableCell>
                         <div className="font-medium max-w-[220px] truncate" title={r.company?.name}>
                           {r.company?.name || "No company"}
@@ -243,25 +253,39 @@ const CareerPages: React.FC = () => {
                           </div>
                         )}
                       </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {r.signedUpAt ? safeFormatDate(r.signedUpAt, "d MMM yyyy") : "—"}
+                      </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-1">
-                          <Badge variant={r.enabled ? "outline" : "destructive"}>{r.enabled ? "On" : "Off"}</Badge>
-                          {r.live ? (
-                            <Badge variant="outline" className="border-success/30 text-success">
-                              Live
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">Not reachable</Badge>
-                          )}
-                        </div>
-                        <a
-                          href={r.publicUrl}
-                          target="_blank"
-                          rel="noreferrer noopener"
-                          className="text-xs text-muted-foreground hover:text-primary"
-                        >
-                          /careers/{r.slug}
-                        </a>
+                        {r.hasLink && r.publicUrl ? (
+                          <>
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Badge variant={r.enabled ? "outline" : "destructive"}>{r.enabled ? "On" : "Off"}</Badge>
+                              {r.live ? (
+                                <Badge variant="outline" className="border-success/30 text-success">
+                                  Live
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary">Not reachable</Badge>
+                              )}
+                            </div>
+                            <a
+                              href={r.publicUrl}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="text-xs text-muted-foreground hover:text-primary"
+                            >
+                              /careers/{r.slug}
+                            </a>
+                          </>
+                        ) : (
+                          <>
+                            <Badge variant="secondary">No link yet</Badge>
+                            <div className="mt-1 max-w-[180px] text-xs text-muted-foreground">
+                              Created when the employer opens Career page
+                            </div>
+                          </>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className={r.company?.hasLogo ? "" : "text-amber-700"}>
@@ -281,11 +305,13 @@ const CareerPages: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <a href={r.publicUrl} target="_blank" rel="noreferrer noopener">
-                                Open public page
-                              </a>
-                            </DropdownMenuItem>
+                            {r.hasLink && r.publicUrl && (
+                              <DropdownMenuItem asChild>
+                                <a href={r.publicUrl} target="_blank" rel="noreferrer noopener">
+                                  Open public page
+                                </a>
+                              </DropdownMenuItem>
+                            )}
                             {r.company && (
                               <DropdownMenuItem asChild>
                                 <Link to={`${PATHS.ADMIN.HIRING.COMPANIES}?tab=all&ownerId=${r.employer._id}`}>
@@ -296,13 +322,17 @@ const CareerPages: React.FC = () => {
                             <DropdownMenuItem asChild>
                               <Link to={`${PATHS.ADMIN.EMPLOYERS_ADMIN.LIST}/${r.employer._id}`}>Open employer</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className={r.enabled ? "text-destructive" : undefined}
-                              onSelect={() => setToggle(r)}
-                            >
-                              {r.enabled ? "Turn page off…" : "Turn page on…"}
-                            </DropdownMenuItem>
+                            {r.hasLink && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className={r.enabled ? "text-destructive" : undefined}
+                                  onSelect={() => setToggle(r)}
+                                >
+                                  {r.enabled ? "Turn page off…" : "Turn page on…"}
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -312,8 +342,13 @@ const CareerPages: React.FC = () => {
               </Table>
             </div>
           )}
-          {result && result.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-end gap-2 mt-4 text-sm">
+          {result && result.pagination.total > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-2 mt-4 text-sm">
+              <span className="mr-auto text-muted-foreground">
+                Showing {(result.pagination.page - 1) * result.pagination.limit + 1}–
+                {Math.min(result.pagination.page * result.pagination.limit, result.pagination.total)} of{" "}
+                {result.pagination.total}
+              </span>
               <Button
                 variant="outline"
                 size="sm"

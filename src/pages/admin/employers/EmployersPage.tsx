@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Download, RefreshCw, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Download, RefreshCw, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CompanyVerificationBadge, RecruiterStatusBadge } from "@/components/admin/recruiters/RecruiterBits";
 import { fmtDate } from "@/components/admin/recruiters/recruiterFormat";
@@ -154,10 +154,26 @@ const EmployersPage: React.FC = () => {
     update(Object.fromEntries(URL_KEYS.map((k) => [k, undefined])));
   };
 
+  // Ticked rows, or (none ticked) every employer matching the search + filters.
+  const total = result?.pagination.total ?? 0;
+  const exportTotal = selected.length || total;
+  const exportLabel = selected.length
+    ? `Export (${selected.length} selected)`
+    : `${hasFilters ? "Export filtered" : "Export all"} (${total.toLocaleString("en-IN")})`;
+
   const handleExport = async () => {
+    if (exporting || exportTotal === 0) return;
+    setExporting(true);
+    toast({
+      title: "Preparing export",
+      description: `${exportTotal.toLocaleString("en-IN")} employers. The CSV downloads when it's ready.`,
+    });
     try {
-      setExporting(true);
-      await employerAdminApi.exportCsv(selected, filters);
+      const { rows } = await employerAdminApi.exportCsv(selected, filters);
+      toast({
+        title: "Export downloaded",
+        description: `${(rows ?? exportTotal).toLocaleString("en-IN")} employers`,
+      });
     } catch (err) {
       toast({
         title: "Export failed",
@@ -210,9 +226,18 @@ const EmployersPage: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-              <Button onClick={handleExport} size="sm" variant="outline" disabled={exporting || !result?.pagination.total}>
-                <Download className="h-4 w-4 mr-2" />
-                {selected.length ? `Export (${selected.length})` : "Export filtered"}
+              <Button
+                onClick={handleExport}
+                size="sm"
+                variant="outline"
+                disabled={exporting || loading || exportTotal === 0}
+              >
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {exporting ? "Exporting…" : exportLabel}
               </Button>
             </div>
           </div>

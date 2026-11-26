@@ -47,6 +47,8 @@ const SOURCE_LABELS: Record<string, string> = {
   "pipeline-link": "Pipeline link",
   "pipeline-database": "Pipeline database",
   "recruiter-search": "Find candidates",
+  // Employer career page 8.4: applied from /careers/{slug}/jobs/{code}.
+  "career-page": "Career page",
 };
 
 // Employer admin 4.1: recruiter pipelines, employer pipelines (unclaimed employer jobs), or both.
