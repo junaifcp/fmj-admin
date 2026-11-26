@@ -44,6 +44,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { verificationReviewApi } from "@/api/verificationReview";
+import { CareerProofsTab } from "./CareerProofsTab";
 import type {
   VerificationDigilockerDetails,
   VerificationReviewFilter,
@@ -389,7 +390,7 @@ const ViewDialog: React.FC<{ row: VerificationReviewRow | null; onClose: () => v
 // Page
 // ---------------------------------------------------------------------------
 
-const VerificationPage: React.FC = () => {
+const IdDocumentsSection: React.FC = () => {
   const [params, setParams] = useSearchParams();
   const statusParam = params.get("status");
   const filter: VerificationReviewFilter = isFilter(statusParam) ? statusParam : "pending";
@@ -690,6 +691,41 @@ const VerificationPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+};
+
+/**
+ * Candidate full view 6.2: two sections on one page. "ID documents" is the
+ * screen above, unchanged; "Career proofs" is the jobs / degrees / courses queue.
+ * `?section=career` keeps the choice in the URL.
+ */
+const VerificationPage: React.FC = () => {
+  const [params, setParams] = useSearchParams();
+  const section = params.get("section") === "career" ? "career" : "id";
+  const choose = (value: string) => {
+    const next = new URLSearchParams();
+    if (value === "career") next.set("section", "career");
+    setParams(next);
+  };
+  return (
+    <div className="space-y-6">
+      <Tabs value={section} onValueChange={choose}>
+        <TabsList aria-label="What to review">
+          <TabsTrigger value="id">ID documents</TabsTrigger>
+          <TabsTrigger value="career">Career proofs</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {section === "career" ? (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold">Career proofs</h1>
+          </div>
+          <CareerProofsTab />
+        </>
+      ) : (
+        <IdDocumentsSection />
+      )}
     </div>
   );
 };
