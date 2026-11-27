@@ -313,6 +313,17 @@ export interface AdminCvDropRow {
   contactedAt: string | null;
   hoursToContact: number | null;
   createdAt: string;
+  /** CV drop candidate account 4.2: the walk-in made a FitMyJob account. Optional until the API sends it. */
+  hasAccount?: boolean;
+  /** The account's email was verified with a code. */
+  emailVerified?: boolean;
+}
+
+/** The list reply: a page of rows plus how many of all matching drops have an account (4.2). */
+export interface AdminCvDropList {
+  data: AdminCvDropRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  withAccount?: number;
 }
 
 export interface CvDropSummaryRow {
@@ -321,6 +332,8 @@ export interface CvDropSummaryRow {
   total: number;
   new: number;
   uncontacted7d: number;
+  /** CV drop candidate account 4.2. */
+  withAccount?: number;
   medianHoursToContact: number | null;
 }
 

@@ -2,11 +2,12 @@
 // Employer admin 8.1: CV drops across all employers. Contact details are
 // masked; the file opens only through the audited stream (row menu).
 // Filters live in the URL (the Overview tile links to ?status=new&olderThanDays=7).
+// CV drop candidate account 4.2: an Account column and a "With account" tile
+// (drops that became FitMyJob accounts, for the current filters).
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { cvDropsAdminApi } from "@/api/employerAdmin";
-import type { Paged } from "@/types/recruiterAdmin";
-import type { AdminCvDropRow, CvDropFilters, CvDropSummaryRow } from "@/types/employerAdmin";
+import type { AdminCvDropList, CvDropFilters, CvDropSummaryRow } from "@/types/employerAdmin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ const ALL = "all";
 
 const CvDrops: React.FC = () => {
   const [params, setParams] = useSearchParams();
-  const [result, setResult] = useState<Paged<AdminCvDropRow> | null>(null);
+  const [result, setResult] = useState<AdminCvDropList | null>(null);
   const [summary, setSummary] = useState<CvDropSummaryRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +134,9 @@ const CvDrops: React.FC = () => {
                     <span className="font-bold">{s.uncontacted7d}</span> waiting 7+ days ·{" "}
                     <span className="font-bold">{s.new}</span> new of {s.total}
                   </div>
+                  {s.withAccount ? (
+                    <div className="text-xs text-emerald-700">{s.withAccount} with a FitMyJob account</div>
+                  ) : null}
                   <div className="text-xs text-muted-foreground">
                     Median time to contact:{" "}
                     {s.medianHoursToContact == null ? "—" : `${s.medianHoursToContact} h`}
@@ -151,6 +155,21 @@ const CvDrops: React.FC = () => {
               <CardTitle>All CV drops</CardTitle>
               <CardDescription>{result ? `${result.pagination.total} CVs` : "Loading..."}</CardDescription>
             </div>
+            {result && typeof result.withAccount === "number" ? (
+              <div className="rounded-lg border px-4 py-2 sm:ml-auto sm:mr-2" title="CVs whose sender made a FitMyJob account">
+                <div className="text-xs text-muted-foreground">With account</div>
+                <div className="text-xl font-bold leading-tight">
+                  {result.withAccount}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">
+                    of {result.pagination.total}
+                    {result.pagination.total > 0
+                      ? ` (${Math.round((result.withAccount / result.pagination.total) * 100)}%)`
+                      : ""}
+                  </span>
+                </div>
+                {hasFilters ? <div className="text-xs text-muted-foreground">matching the filters</div> : null}
+              </div>
+            ) : null}
             <Button
               onClick={() => setReloadKey((n) => n + 1)}
               size="sm"
@@ -236,6 +255,7 @@ const CvDrops: React.FC = () => {
                     <TableHead>Company</TableHead>
                     <TableHead>Employer</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Account</TableHead>
                     <TableHead>Received</TableHead>
                     <TableHead />
                   </TableRow>
@@ -243,7 +263,7 @@ const CvDrops: React.FC = () => {
                 <TableBody>
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {hasFilters ? "No CV drops match these filters" : "No CV drops yet"}
                       </TableCell>
                     </TableRow>
@@ -251,7 +271,11 @@ const CvDrops: React.FC = () => {
                   {rows.map((r) => (
                     <TableRow key={r._id}>
                       <TableCell>
-                        <div className="font-medium">{r.name}</div>
+                        {r.name ? (
+                          <div className="font-medium">{r.name}</div>
+                        ) : (
+                          <div className="font-medium italic text-muted-foreground">Name not found</div>
+                        )}
                         <div className="text-xs text-muted-foreground">
                           {[r.phone, r.email].filter(Boolean).join(" · ")}
                         </div>
@@ -277,13 +301,20 @@ const CvDrops: React.FC = () => {
                           <div className="text-xs text-muted-foreground mt-1">in {r.hoursToContact} h</div>
                         )}
                       </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {r.hasAccount ? (
+                          <span className="text-emerald-700">{r.emailVerified ? "Yes · verified" : "Yes"}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {fmtDateTime(r.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <CvDropRowMenu
                           id={r._id}
-                          candidateName={r.name}
+                          candidateName={r.name || "Name not found"}
                           employerId={r.employer?._id}
                           onDeleted={() => setReloadKey((n) => n + 1)}
                         />
