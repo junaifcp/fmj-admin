@@ -14,8 +14,9 @@ import {
 import { MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { adminJobsApi } from "@/api/adminJobs";
-import type { JobModerationStatus } from "@/types/recruiterAdmin";
+import type { AdminJobTag, JobModerationStatus } from "@/types/recruiterAdmin";
 import { ReasonDialog } from "./RecruiterBits";
+import { EditJobTagsDialog } from "./JobTags";
 import {
   AUTO_FLAG_LABELS,
   JOB_ACTIONS,
@@ -54,7 +55,11 @@ export const AutoFlagChips: React.FC<{ flags: string[] }> = ({ flags }) => {
   );
 };
 
-/** Row menu with every moderation action, each behind a confirm dialog. */
+/**
+ * Row menu with every moderation action, each behind a confirm dialog.
+ * Job tags 2.2: pass `tags` (the job's tags) to add "Edit tags…"; callers that
+ * don't (Recruiter Detail) keep the menu as it was.
+ */
 export const JobActionsMenu: React.FC<{
   jobId: string;
   jobTitle: string;
@@ -63,9 +68,11 @@ export const JobActionsMenu: React.FC<{
   posterStatus?: string | null;
   onDone: () => void;
   triggerLabel?: string;
-}> = ({ jobId, jobTitle, status, moderationStatus, posterStatus, onDone, triggerLabel }) => {
+  tags?: AdminJobTag[];
+}> = ({ jobId, jobTitle, status, moderationStatus, posterStatus, onDone, triggerLabel, tags }) => {
   const { toast } = useToast();
   const [pending, setPending] = useState<ActionKey | null>(null);
+  const [editingTags, setEditingTags] = useState(false);
   const actions = availableJobActions({ status, moderationStatus, posterStatus });
   const cfg = pending ? JOB_ACTIONS[pending] : null;
 
@@ -100,6 +107,12 @@ export const JobActionsMenu: React.FC<{
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {tags && (
+            <>
+              <DropdownMenuItem onSelect={() => setEditingTags(true)}>Edit tags…</DropdownMenuItem>
+              {actions.length > 0 && <DropdownMenuSeparator />}
+            </>
+          )}
           {actions.map((a, i) => (
             <React.Fragment key={a}>
               {a === "poster" && i > 0 && <DropdownMenuSeparator />}
@@ -127,6 +140,16 @@ export const JobActionsMenu: React.FC<{
           reasonRequired={cfg.reason}
           onCancel={() => setPending(null)}
           onConfirm={run}
+        />
+      )}
+      {tags && (
+        <EditJobTagsDialog
+          open={editingTags}
+          jobId={jobId}
+          jobTitle={jobTitle}
+          current={tags}
+          onClose={() => setEditingTags(false)}
+          onSaved={onDone}
         />
       )}
     </>

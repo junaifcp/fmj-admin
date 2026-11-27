@@ -18,6 +18,7 @@ import {
   OutsideLinkClickStats,
   OutsideLinkSubmissionAdmin,
   Tag,
+  TagAppliesTo,
   Certificate,
   TaxonomyRowType,
   TaxonomyProposalItem,
@@ -1782,12 +1783,15 @@ export const getTags = (
   page = 1,
   limit = 20,
   search = "",
+  /** Job tags 2.1: only one kind; omit for all tags. */
+  appliesTo?: TagAppliesTo,
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<PaginationResponse<Tag>> => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...(search && { search }),
+    ...(appliesTo && { appliesTo }),
   });
   return get<PaginationResponse<Tag>>(`/tags?${params.toString()}`, opts);
 };
@@ -1806,7 +1810,7 @@ export const getTag = (
  * Create a new tag
  */
 export const createTag = (
-  data: { name: string },
+  data: { name: string; appliesTo?: TagAppliesTo; showToCandidates?: boolean },
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<Tag> => {
   return createEndpoint<Tag>("/tags", data, opts);
@@ -1817,7 +1821,7 @@ export const createTag = (
  */
 export const updateTag = (
   tagId: string,
-  data: { name?: string },
+  data: { name?: string; appliesTo?: TagAppliesTo; showToCandidates?: boolean },
   opts?: { signal?: AbortSignal; token?: string }
 ): Promise<Tag> => {
   return updateEndpoint<Tag>(`/tags/${tagId}`, data, opts);

@@ -293,6 +293,22 @@ export interface JobModeration {
 
 type JobPerson = { _id: string; email: string; name: string; role?: string } | null;
 
+/** Job tags 2.2 (docs/job-tags): a job tag as the admin jobs API sends it. */
+export interface AdminJobTag {
+  _id: string;
+  name: string;
+  slug: string;
+  showToCandidates: boolean;
+}
+
+/** POST /admin/jobs/tags/bulk result. */
+export interface BulkJobTagsResult {
+  matched: number;
+  modified: number;
+  skippedTooMany: number;
+  missing: number;
+}
+
 export interface AdminJobRow {
   _id: string;
   title: string;
@@ -307,6 +323,8 @@ export interface AdminJobRow {
   posterStatus: "pending" | "ready" | "failed" | null;
   moderation: JobModeration;
   publicUrl: string | null;
+  /** Job tags 2.2. */
+  tags: AdminJobTag[];
   createdAt: string;
 }
 
@@ -328,6 +346,8 @@ export interface AdminJobFilters {
   posterStatus?: string;
   postedByRole?: "recruiter" | "employer";
   minApplications?: string;
+  /** Job tags 2.2: one tag id. */
+  tagId?: string;
 }
 
 type PopulatedPerson = { _id: string; email: string; firstName?: string; lastName?: string; role?: string };
@@ -351,6 +371,8 @@ export interface AdminJobDetail {
   applicationCount: number;
   publicUrl: string | null;
   moderation: JobModeration;
+  /** Job tags 2.2. */
+  tags: AdminJobTag[];
   history: AdminActivityRow[];
   createdAt: string;
 }

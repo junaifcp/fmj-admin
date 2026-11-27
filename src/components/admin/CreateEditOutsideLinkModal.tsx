@@ -57,7 +57,8 @@ export const CreateEditOutsideLinkModal: React.FC<CreateEditOutsideLinkModalProp
   const fetchTags = useCallback(async (searchTerm = "") => {
     try {
       setTagsLoading(true);
-      const result = await getTags(1, 100, searchTerm);
+      // Job tags 2.1: job tags never go on outside links.
+      const result = await getTags(1, 100, searchTerm, "outside_link");
       setTags(result.data);
     } catch (error) {
       console.error("Failed to fetch tags:", error);

@@ -395,10 +395,18 @@ export interface DateRange {
   to: string; // ISO date string
 }
 
+/** Job tags 2.1 (docs/job-tags): what a tag is for. Old tags read as outside_link. */
+export type TagAppliesTo = "job" | "outside_link";
+
 export interface Tag {
   _id: string;
   name: string;
   slug: string;
+  appliesTo: TagAppliesTo;
+  /** Job tags only; always false for outside-link tags. */
+  showToCandidates: boolean;
+  /** List only, job tags only: jobs carrying the tag (any status). */
+  jobCount?: number;
   createdBy?: string | { _id: string; email?: string };
   createdAt: string;
   updatedAt: string;

@@ -6,7 +6,9 @@ import { apiBaseUrl } from "@/config/env";
 import type {
   AdminJobDetail,
   AdminJobFilters,
+  AdminJobTag,
   AdminJobsResult,
+  BulkJobTagsResult,
   JobModerationAction,
 } from "@/types/recruiterAdmin";
 
@@ -38,5 +40,21 @@ export const adminJobsApi = {
 
   async regeneratePoster(id: string): Promise<void> {
     await client.post(`/${encodeURIComponent(id)}/poster/regenerate`);
+  },
+
+  /** Job tags 2.2: replace one job's tags (an empty list clears them). */
+  async setTags(id: string, tagIds: string[]): Promise<{ jobId: string; tags: AdminJobTag[] }> {
+    const res = await client.put(`/${encodeURIComponent(id)}/tags`, { tagIds });
+    return res.data.data;
+  },
+
+  /** Job tags 2.2: add and/or remove tags on up to 200 jobs. */
+  async bulkTags(body: {
+    jobIds: string[];
+    addTagIds?: string[];
+    removeTagIds?: string[];
+  }): Promise<BulkJobTagsResult> {
+    const res = await client.post(`/tags/bulk`, body);
+    return res.data.data;
   },
 };
