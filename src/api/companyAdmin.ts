@@ -48,4 +48,13 @@ export const companyAdminApi = {
   async setVerification(id: string, verified: CompanyVerification, notes: string): Promise<void> {
     await client.patch(`/${encodeURIComponent(id)}/verify`, { verified, notes });
   },
+
+  /**
+   * Company reference number (job fair code, e.g. "FMJ01"): null or "" clears it.
+   * 400 on a bad format, 409 when another company has the code.
+   */
+  async setReference(id: string, referenceCode: string | null): Promise<CompanyDetail> {
+    const res = await client.patch(`/${encodeURIComponent(id)}/reference`, { referenceCode });
+    return res.data.data;
+  },
 };

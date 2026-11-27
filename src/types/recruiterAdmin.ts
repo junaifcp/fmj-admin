@@ -248,6 +248,8 @@ export interface CompanyListRow {
   ownerName?: string;
   ownerEmail?: string;
   ownerRole?: string;
+  /** Company reference number: admin-set job fair code (e.g. "FMJ01"); absent when none. */
+  referenceCode?: string | null;
   jobCount: number;
   createdAt: string;
 }
