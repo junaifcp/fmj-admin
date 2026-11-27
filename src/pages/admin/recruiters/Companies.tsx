@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { companyAdminApi } from "@/api/companyAdmin";
+import { CompanyReferenceField, ReferencePill } from "@/components/admin/recruiters/CompanyReference";
 import type {
   CompanyDetail,
   CompanyListResult,
@@ -355,6 +356,7 @@ const CompaniesPage: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Company</TableHead>
+                      <TableHead>Ref</TableHead>
                       <TableHead>Owner</TableHead>
                       <TableHead>City</TableHead>
                       <TableHead className="text-right">Jobs</TableHead>
@@ -366,7 +368,7 @@ const CompaniesPage: React.FC = () => {
                   <TableBody>
                     {rows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                           {tab === "pending" && !search ? "Nothing waiting for review" : "No companies found"}
                         </TableCell>
                       </TableRow>
@@ -383,6 +385,9 @@ const CompaniesPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <ReferencePill code={c.referenceCode} />
                         </TableCell>
                         <TableCell>
                           <OwnerCell
@@ -494,6 +499,26 @@ const CompaniesPage: React.FC = () => {
               )}
 
               <dl className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
+                <dt className="text-muted-foreground pt-1.5">Reference number</dt>
+                <dd className="col-span-2">
+                  <CompanyReferenceField
+                    companyId={detail._id}
+                    value={detail.referenceCode}
+                    onSaved={(code) => {
+                      setDetail((d) => (d ? { ...d, referenceCode: code } : d));
+                      setResult((r) =>
+                        r
+                          ? {
+                              ...r,
+                              data: r.data.map((row) =>
+                                row._id === detail._id ? { ...row, referenceCode: code } : row
+                              ),
+                            }
+                          : r
+                      );
+                    }}
+                  />
+                </dd>
                 <dt className="text-muted-foreground">Website</dt>
                 <dd className="col-span-2 break-all">
                   {detail.website ? (
