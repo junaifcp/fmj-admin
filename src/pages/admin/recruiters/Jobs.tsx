@@ -56,6 +56,9 @@ import {
 } from "@/components/admin/recruiters/JobModeration";
 import { fmtDate, fmtDateTime, personName } from "@/components/admin/recruiters/recruiterFormat";
 import OwnerLink from "@/components/admin/hiring/OwnerLink";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BulkTagBar, JobTagBadges } from "@/components/admin/recruiters/JobTags";
+import { useJobTagOptions } from "@/components/admin/recruiters/jobTagOptions";
 
 type Tab = "flagged" | "removed" | "all";
 const TABS: { value: Tab; label: string }[] = [
@@ -65,6 +68,8 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 const PAGE_SIZE = 20;
 const ALL = "all";
+/** The drawer lists every tag (a job has at most 10). */
+const MAX_DRAWER_TAGS = 10;
 
 /** URL keys that are plain filters (sent to the API as-is). */
 const FILTER_KEYS = [
@@ -79,6 +84,8 @@ const FILTER_KEYS = [
   "minApplications",
   "recruiterId",
   "companyId",
+  // Job tags 2.2: one tag id.
+  "tagId",
 ] as const;
 
 const SELECTS: { key: (typeof FILTER_KEYS)[number]; label: string; options: [string, string][] }[] = [
@@ -104,6 +111,8 @@ const ACTION_LABELS: Record<string, string> = {
   "job.restore": "Restored",
   "job.close": "Closed",
   "job.poster_regenerate": "Poster regenerated",
+  "job.tags_set": "Tags edited",
+  "job.tags_bulk": "Tags changed in bulk",
 };
 
 const stripHtml = (html?: string) =>
@@ -142,6 +151,9 @@ const JobsPage: React.FC = () => {
   };
   const [detail, setDetail] = useState<AdminJobDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  // Job tags 2.2: the job tags (filter, bulk menus) and the selected rows on this page.
+  const { tags: jobTags } = useJobTagOptions();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const setParam = useCallback(
     (key: string, value?: string) => {
@@ -176,6 +188,8 @@ const JobsPage: React.FC = () => {
   }, [params, tab]);
 
   useEffect(() => setPage(1), [filters]);
+  // A selection belongs to one page of one filter set.
+  useEffect(() => setSelected(new Set()), [page, filters]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -224,6 +238,16 @@ const JobsPage: React.FC = () => {
 
   const rows = result?.data ?? [];
   const counts = result?.counts;
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r._id));
+  const toggleRow = (id: string, on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const togglePage = (on: boolean) => setSelected(on ? new Set(rows.map((r) => r._id)) : new Set());
+  const tagFilterName = jobTags.find((t) => t._id === params.get("tagId"))?.name;
   const activeFilterCount = FILTER_KEYS.filter((k) => params.get(k)).length + (params.get("q") ? 1 : 0);
   const clearFilters = () => {
     const next = new URLSearchParams();
@@ -303,6 +327,23 @@ const JobsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             ))}
+            <Select
+              value={params.get("tagId") ?? ALL}
+              onValueChange={(v) => setParam("tagId", v === ALL ? undefined : v)}
+            >
+              <SelectTrigger className="w-40" aria-label="Tag">
+                <SelectValue placeholder="Tag: one tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Tag: all</SelectItem>
+                {jobTags.map((t) => (
+                  <SelectItem key={t._id} value={t._id}>
+                    {t.name}
+                    {t.showToCandidates ? "" : " (hidden)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
               key={`city-${params.get("city") ?? ""}`}
               placeholder="City"
@@ -352,6 +393,11 @@ const JobsPage: React.FC = () => {
                 One company <X className="h-4 w-4 ml-1" />
               </Button>
             )}
+            {params.get("tagId") && (
+              <Button variant="outline" size="sm" onClick={() => setParam("tagId")}>
+                {tagFilterName ? `Tag: ${tagFilterName}` : "One tag"} <X className="h-4 w-4 ml-1" />
+              </Button>
+            )}
             {activeFilterCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
@@ -375,12 +421,38 @@ const JobsPage: React.FC = () => {
             </div>
           ) : (
             <>
+              {selected.size > 0 && (
+                <>
+                  {!params.get("companyId") && (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Tip: filter by company, then select all to tag a company's jobs.
+                    </p>
+                  )}
+                  <BulkTagBar
+                    selectedIds={[...selected]}
+                    tags={jobTags}
+                    onClear={() => setSelected(new Set())}
+                    onDone={afterAction}
+                  />
+                </>
+              )}
               <div className="overflow-x-auto">
                 <Table className={loading ? "opacity-60" : undefined}>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          // Ticked only for the whole page: this Checkbox draws a check for
+                          // "indeterminate" too, which would read as "all selected".
+                          checked={allSelected}
+                          onCheckedChange={(on) => togglePage(on === true)}
+                          disabled={rows.length === 0}
+                          aria-label="Select this page"
+                        />
+                      </TableHead>
                       <TableHead>Job</TableHead>
                       <TableHead>Company</TableHead>
+                      <TableHead>Tags</TableHead>
                       <TableHead>Posted by</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Moderation</TableHead>
@@ -393,13 +465,25 @@ const JobsPage: React.FC = () => {
                   <TableBody>
                     {rows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           {tab === "flagged" ? "Nothing flagged" : "No jobs match these filters"}
                         </TableCell>
                       </TableRow>
                     )}
                     {rows.map((j: AdminJobRow) => (
-                      <TableRow key={j._id} className="cursor-pointer" onClick={() => setOpenId(j._id)}>
+                      <TableRow
+                        key={j._id}
+                        className="cursor-pointer"
+                        data-state={selected.has(j._id) ? "selected" : undefined}
+                        onClick={() => setOpenId(j._id)}
+                      >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selected.has(j._id)}
+                            onCheckedChange={(on) => toggleRow(j._id, on === true)}
+                            aria-label={`Select ${j.title}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="font-medium flex items-center gap-1">
                             {j.title}
@@ -423,6 +507,9 @@ const JobsPage: React.FC = () => {
                         <TableCell>
                           <div className="text-sm">{j.company?.name ?? "—"}</div>
                           {j.company && <CompanyVerificationBadge value={j.company.verified} />}
+                        </TableCell>
+                        <TableCell>
+                          <JobTagBadges tags={j.tags} />
                         </TableCell>
                         <TableCell className="text-sm">
                           <PersonLink p={j.postedBy} />
@@ -457,6 +544,7 @@ const JobsPage: React.FC = () => {
                             moderationStatus={j.moderation.status}
                             posterStatus={j.posterStatus}
                             onDone={afterAction}
+                            tags={j.tags ?? []}
                           />
                         </TableCell>
                       </TableRow>
@@ -533,9 +621,16 @@ const JobsPage: React.FC = () => {
                     posterStatus={detail.posterStatus}
                     onDone={afterAction}
                     triggerLabel="Actions"
+                    tags={detail.tags ?? []}
                   />
                 </div>
               </div>
+              {detail.tags && detail.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Tags</span>
+                  <JobTagBadges tags={detail.tags} max={MAX_DRAWER_TAGS} />
+                </div>
+              )}
 
               {detail.moderation.status !== "none" && (
                 <Alert variant={detail.moderation.status === "removed" ? "destructive" : "default"}>

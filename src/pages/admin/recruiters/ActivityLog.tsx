@@ -36,6 +36,9 @@ const ACTION_LABELS: Record<string, string> = {
   "job.restore": "Restored job",
   "job.close": "Closed job",
   "job.poster_regenerate": "Regenerated poster",
+  // Job tags 2.2
+  "job.tags_set": "Edited job tags",
+  "job.tags_bulk": "Changed job tags (bulk)",
   "jobdesk.assign": "Assigned employer job",
   "jobdesk.unassign": "Unassigned employer job",
   "jobdesk.set_plan": "Set job desk plan",

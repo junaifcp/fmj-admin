@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -31,8 +32,19 @@ import {
   updateTag,
   deleteTag,
 } from "@/api/admin";
-import { Tag, PaginationResponse } from "@/types/admin";
-import { useToast } from "@/hooks/use-toast";
+import { Tag, TagAppliesTo, PaginationResponse } from "@/types/admin";
+import { PATHS } from "@/routes/paths";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,7 +65,44 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
+// Job tags 2.1 (docs/job-tags): one Tag list, two kinds. Job tag slugs use hyphens
+// (they go into candidate links, ?tags=job-fair); outside-link slugs keep underscores.
+const KIND_ALL = "all";
+const KIND_LABELS: Record<TagAppliesTo, string> = {
+  job: "Jobs",
+  outside_link: "Outside links",
+};
+
+function parseKind(value: string | null): TagAppliesTo | undefined {
+  return value === "job" || value === "outside_link" ? value : undefined;
+}
+
+/** The slug the server will make (utils/tagSlug.ts), before any _2 / -2 suffix. */
+function previewSlug(name: string, kind: TagAppliesTo): string {
+  const base = name.toLowerCase().trim();
+  if (kind === "job") {
+    return (
+      base
+        .replace(/[\s_]+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "") || "tag-slug"
+    );
+  }
+  return (
+    base
+      .replace(/[\s]+/g, "_")
+      .replace(/[^a-z0-9_]/g, "")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "") || "tag_slug"
+  );
+}
+
+type TagForm = { name: string; appliesTo: TagAppliesTo; showToCandidates: boolean };
+
 const TagsPage: React.FC = () => {
+  const [params, setParams] = useSearchParams();
+  const kind = parseKind(params.get("kind"));
   const [data, setData] = useState<PaginationResponse<Tag> | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -62,29 +111,29 @@ const TagsPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Tag | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: "" });
-
-  const { toast } = useToast();
+  const [itemToDelete, setItemToDelete] = useState<Tag | null>(null);
+  const emptyForm = (): TagForm => ({
+    name: "",
+    appliesTo: kind === "job" ? "job" : "outside_link",
+    showToCandidates: false,
+  });
+  const [formData, setFormData] = useState<TagForm>(emptyForm);
 
   const fetchData = useCallback(
     async (page = 1, searchTerm = "") => {
       try {
         setLoading(true);
-        const result = await getTags(page, 20, searchTerm);
+        const result = await getTags(page, 20, searchTerm, kind);
         setData(result);
       } catch (error) {
-        toast({
-          title: "Failed to fetch tags",
-          description:
-            error instanceof Error ? error.message : "Unknown error",
-          variant: "destructive",
+        toast.error("Failed to fetch tags", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setLoading(false);
       }
     },
-    [toast]
+    [kind]
   );
 
   useEffect(() => {
@@ -101,23 +150,66 @@ const TagsPage: React.FC = () => {
     fetchData(page, search);
   };
 
+  const setKind = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (value === KIND_ALL) next.delete("kind");
+    else next.set("kind", value);
+    setParams(next, { replace: true });
+  };
+
+  const handleCreate = () => {
+    setEditingItem(null);
+    setFormData(emptyForm());
+    setModalOpen(true);
+  };
+
   const handleEdit = (item: Tag) => {
     setEditingItem(item);
-    setFormData({ name: item.name });
+    setFormData({
+      name: item.name,
+      appliesTo: item.appliesTo ?? "outside_link",
+      showToCandidates: item.appliesTo === "job" && !!item.showToCandidates,
+    });
     setModalOpen(true);
+  };
+
+  /** Show to candidates, straight from the list: optimistic, undone on failure. */
+  const toggleVisible = async (item: Tag, on: boolean) => {
+    const patch = (value: boolean) =>
+      setData((d) =>
+        d
+          ? {
+              ...d,
+              data: d.data.map((t) =>
+                t._id === item._id ? { ...t, showToCandidates: value } : t
+              ),
+            }
+          : d
+      );
+    patch(on);
+    try {
+      await updateTag(item._id, { showToCandidates: on });
+      toast.success(
+        on
+          ? `"${item.name}" is now shown to candidates`
+          : `"${item.name}" is now hidden from candidates`
+      );
+    } catch (error) {
+      patch(!on);
+      toast.error("Couldn't change visibility", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteTag(id);
-      toast({ title: "Tag deleted successfully" });
+      toast.success("Tag deleted successfully");
       fetchData(currentPage, search);
     } catch (error) {
-      toast({
-        title: "Failed to delete tag",
-        description:
-          error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+      toast.error("Failed to delete tag", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     }
   };
@@ -130,22 +222,29 @@ const TagsPage: React.FC = () => {
 
     try {
       setModalLoading(true);
+      const isJob = formData.appliesTo === "job";
       if (editingItem) {
-        await updateTag(editingItem._id, { name: formData.name.trim() });
-        toast({ title: "Tag updated successfully" });
+        await updateTag(editingItem._id, {
+          name: formData.name.trim(),
+          ...(formData.appliesTo !== editingItem.appliesTo
+            ? { appliesTo: formData.appliesTo }
+            : {}),
+          ...(isJob ? { showToCandidates: formData.showToCandidates } : {}),
+        });
+        toast.success("Tag updated successfully");
       } else {
-        await createTag({ name: formData.name.trim() });
-        toast({ title: "Tag created successfully" });
+        await createTag({
+          name: formData.name.trim(),
+          appliesTo: formData.appliesTo,
+          showToCandidates: isJob && formData.showToCandidates,
+        });
+        toast.success("Tag created successfully");
       }
       fetchData(currentPage, search);
       handleCloseModal();
     } catch (error) {
-      toast({
-        title: editingItem
-          ? "Failed to update tag"
-          : "Failed to create tag",
+      toast.error(editingItem ? "Failed to update tag" : "Failed to create tag", {
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
       });
     } finally {
       setModalLoading(false);
@@ -155,8 +254,12 @@ const TagsPage: React.FC = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingItem(null);
-    setFormData({ name: "" });
+    setFormData(emptyForm());
   };
+
+  // A job tag on jobs can't change kind (the server answers 409). Outside-link use
+  // isn't counted in the list, so that case is left to the server's message.
+  const kindLocked = !!editingItem && editingItem.appliesTo === "job" && (editingItem.jobCount ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -166,10 +269,11 @@ const TagsPage: React.FC = () => {
             Tags Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage tags for outside links (used for Google Tag Manager)
+            Job tags group jobs for candidates (e.g. a job fair). Outside link
+            tags are used for Google Tag Manager.
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
           Create Tag
         </Button>
@@ -179,13 +283,24 @@ const TagsPage: React.FC = () => {
         <CardHeader>
           <CardTitle>Tags</CardTitle>
           <CardDescription>
-            Create and manage tags for categorizing outside links
+            Create tags, choose what they are used for, and show job tags to
+            candidates when they are ready
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Search */}
+            {/* Kind + search */}
             <div className="flex items-center gap-4">
+              <Select value={kind ?? KIND_ALL} onValueChange={setKind}>
+                <SelectTrigger className="w-44" aria-label="Used for">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={KIND_ALL}>All tags</SelectItem>
+                  <SelectItem value="job">Jobs</SelectItem>
+                  <SelectItem value="outside_link">Outside links</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -219,6 +334,9 @@ const TagsPage: React.FC = () => {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Slug</TableHead>
+                        <TableHead>Used for</TableHead>
+                        <TableHead>Candidates</TableHead>
+                        <TableHead>Jobs</TableHead>
                         <TableHead>Created At</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -231,6 +349,40 @@ const TagsPage: React.FC = () => {
                           </TableCell>
                           <TableCell className="font-mono text-sm">
                             {item.slug}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.appliesTo === "job" ? "default" : "secondary"}>
+                              {KIND_LABELS[item.appliesTo ?? "outside_link"]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.appliesTo === "job" ? (
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!item.showToCandidates}
+                                  onCheckedChange={(on) => toggleVisible(item, on)}
+                                  aria-label={`Show "${item.name}" to candidates`}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {item.showToCandidates ? "Shown" : "Hidden"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {item.appliesTo === "job" ? (
+                              <Link
+                                to={`${PATHS.ADMIN.HIRING.JOBS}?tagId=${item._id}`}
+                                className="text-primary underline-offset-4 hover:underline"
+                                title="Open these jobs on the Jobs page"
+                              >
+                                {item.jobCount ?? 0}
+                              </Link>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             {new Date(item.createdAt).toLocaleDateString()}
@@ -248,7 +400,7 @@ const TagsPage: React.FC = () => {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => {
-                                  setItemToDelete(item._id);
+                                  setItemToDelete(item);
                                   setDeleteDialogOpen(true);
                                 }}
                               >
@@ -308,8 +460,8 @@ const TagsPage: React.FC = () => {
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? "Update the tag name. The slug will be regenerated automatically."
-                : "Create a new tag. A slug will be generated automatically from the name."}
+                ? "Update the tag. The slug is regenerated when the name or use changes."
+                : "Create a new tag. A slug is made from the name."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleModalSubmit}>
@@ -329,17 +481,62 @@ const TagsPage: React.FC = () => {
                   <p className="text-xs text-muted-foreground">
                     Slug will be:{" "}
                     <span className="font-mono">
-                      {formData.name
-                        .toLowerCase()
-                        .trim()
-                        .replace(/[\s]+/g, "_")
-                        .replace(/[^a-z0-9_]/g, "")
-                        .replace(/_+/g, "_")
-                        .replace(/^_+|_+$/g, "") || "tag_slug"}
+                      {previewSlug(formData.name, formData.appliesTo)}
                     </span>
                   </p>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>Used for</Label>
+                <RadioGroup
+                  value={formData.appliesTo}
+                  onValueChange={(v) =>
+                    setFormData({
+                      ...formData,
+                      appliesTo: v as TagAppliesTo,
+                      showToCandidates: v === "job" ? formData.showToCandidates : false,
+                    })
+                  }
+                  disabled={kindLocked}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="job" id="tag-kind-job" />
+                    <Label htmlFor="tag-kind-job" className="font-normal">
+                      Jobs
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="outside_link" id="tag-kind-link" />
+                    <Label htmlFor="tag-kind-link" className="font-normal">
+                      Outside links
+                    </Label>
+                  </div>
+                </RadioGroup>
+                {kindLocked && (
+                  <p className="text-xs text-muted-foreground">
+                    In use: remove it from all jobs/links to change
+                  </p>
+                )}
+              </div>
+              {formData.appliesTo === "job" && (
+                <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="tag-visible">Show to candidates</Label>
+                    <p className="text-xs text-muted-foreground">
+                      When on, candidates see this tag as a filter and as a
+                      badge on jobs.
+                    </p>
+                  </div>
+                  <Switch
+                    id="tag-visible"
+                    checked={formData.showToCandidates}
+                    onCheckedChange={(on) =>
+                      setFormData({ ...formData, showToCandidates: on })
+                    }
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -368,8 +565,11 @@ const TagsPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this tag? This action cannot be
-              undone. Note: This will remove the tag from all associated outside links.
+              {itemToDelete?.appliesTo === "job"
+                ? (itemToDelete.jobCount ?? 0) > 0
+                  ? `Are you sure you want to delete "${itemToDelete.name}"? This removes the tag from ${itemToDelete.jobCount} ${itemToDelete.jobCount === 1 ? "job" : "jobs"}. This action cannot be undone.`
+                  : `Are you sure you want to delete "${itemToDelete.name}"? This action cannot be undone.`
+                : "Are you sure you want to delete this tag? This action cannot be undone. Note: This will remove the tag from all associated outside links."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -377,7 +577,7 @@ const TagsPage: React.FC = () => {
             <AlertDialogAction
               onClick={() => {
                 if (itemToDelete) {
-                  handleDelete(itemToDelete);
+                  handleDelete(itemToDelete._id);
                   setItemToDelete(null);
                 }
                 setDeleteDialogOpen(false);
