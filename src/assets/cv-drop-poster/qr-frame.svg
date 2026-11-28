@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 380" width="460" height="380">
+  <title>QR code frame (place real QR inside the white area)</title>
+  <g fill="none">
+  <!-- outer yellow corner brackets -->
+  <path d="M8 300v40a32 32 0 0 0 32 32h20M452 300v40a32 32 0 0 1-32 32h-20" stroke="#FDD40F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M30 40a32 32 0 0 1 32-32" stroke="#FDD40F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M398 8a32 32 0 0 1 32 32" stroke="#FDD40F" stroke-width="7" stroke-linecap="round"/>
+  <!-- card -->
+  <rect x="26" y="4" width="408" height="360" rx="40" fill="#FFFFFF"/>
+  <rect x="34" y="12" width="392" height="344" rx="34" stroke="#FDD40F" stroke-width="8"/>
+  <!-- QR safe area: x 58–402, y 22–346 -->
+  </g>
+</svg>

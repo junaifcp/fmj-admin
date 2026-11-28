@@ -17,7 +17,7 @@ import type {
   EmployerPaymentRow,
   EmployerSharedJobRow,
   EmployerWhatsappRow,
-  AdminCvDropRow,
+  AdminCvDropList,
   CareerPageFilters,
   CareerPageRow,
   CvDropFilters,
@@ -160,7 +160,7 @@ export const employerAdminApi = {
 
 /** Employer admin 8.1: CV drops across employers. */
 export const cvDropsAdminApi = {
-  async list(page: number, limit: number, filters: CvDropFilters, opts?: Opts): Promise<Paged<AdminCvDropRow>> {
+  async list(page: number, limit: number, filters: CvDropFilters, opts?: Opts): Promise<AdminCvDropList> {
     const res = await cvDropsClient.get(`/?${toParams({ page, limit, ...filters })}`, { signal: opts?.signal });
     return res.data.data;
   },

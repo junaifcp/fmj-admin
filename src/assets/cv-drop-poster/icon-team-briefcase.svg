@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Be Part of Our Team</title>
+  <g fill="#0A2547">
+    <!-- handle -->
+    <path d="M23 18v-5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v5h-4.5v-4.5h-9V18z"/>
+    <!-- lid -->
+    <path d="M6 22a4 4 0 0 1 4-4h44a4 4 0 0 1 4 4v10H6z"/>
+    <!-- body -->
+    <path d="M6 35h22v3a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3h22v15a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/>
+  </g>
+  <!-- clasp -->
+  <rect x="29" y="30" width="6" height="8" rx="1.5" fill="#FDD40F"/>
+</svg>

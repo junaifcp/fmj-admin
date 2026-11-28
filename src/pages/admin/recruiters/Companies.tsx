@@ -66,6 +66,7 @@ import {
   personName,
 } from "@/components/admin/recruiters/recruiterFormat";
 import OwnerLink from "@/components/admin/hiring/OwnerLink";
+import CompanyRowMenu from "@/components/admin/recruiters/CompanyRowMenu";
 
 type Tab = CompanyVerification | "all";
 const TABS: { value: Tab; label: string }[] = [
@@ -406,16 +407,12 @@ const CompaniesPage: React.FC = () => {
                           <CompanyVerificationBadge value={c.verified} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenId(c._id);
-                            }}
-                          >
-                            Review
-                          </Button>
+                          {/* Review moved into the row menu, next to Download CV drop. */}
+                          <CompanyRowMenu
+                            companyId={c._id}
+                            companyName={c.name}
+                            onReview={() => setOpenId(c._id)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
