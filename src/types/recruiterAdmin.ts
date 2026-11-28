@@ -254,6 +254,21 @@ export interface CompanyListRow {
   createdAt: string;
 }
 
+/** GET /companies/:id/cv-drop — the company's CV drop, for the admin poster download. */
+export interface CompanyCvDrop {
+  code: string;
+  enabled: boolean;
+  /** {candidate app}/drop/{code}: what the QR opens. */
+  publicUrl: string;
+  companyName: string;
+  hasLogo: boolean;
+  /** This request created the code (the employer had none yet). */
+  created: boolean;
+  employerUserId: string;
+  /** The employer is suspended, so the link won't open until reinstated. */
+  suspended: boolean;
+}
+
 export interface CompanyListResult extends Paged<CompanyListRow> {
   counts: Record<CompanyVerification | "all", number>;
 }

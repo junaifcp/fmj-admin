@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536" width="1024" height="1536">
+  <title>Poster background shapes (1024 x 1536)</title>
+  <rect width="1024" height="1536" fill="#FFFFFF"/>
+  <!-- big yellow top area with curved bottom edge -->
+  <path d="M0 0h1024v760C900 840 720 900 512 900S120 820 0 680z" fill="#FDD40F"/>
+  <!-- left navy wedge -->
+  <path d="M0 770c90 80 170 150 230 195C150 980 70 1020 0 1080z" fill="#0A2547"/>
+  <!-- right navy wedge -->
+  <path d="M1024 960c-80 30-160 60-230 92 80 10 160 40 230 100z" fill="#0A2547"/>
+  <!-- lower-left yellow swoosh -->
+  <path d="M0 1090c60-40 150-70 290-80-100 50-200 110-290 180z" fill="#FDD40F"/>
+  <!-- lower-right yellow swoosh -->
+  <path d="M1024 1170c-60-50-140-90-260-110 100 40 180 100 260 170z" fill="#FDD40F"/>
+</svg>

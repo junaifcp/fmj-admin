@@ -5,6 +5,7 @@ import { createApiClient } from "./apiClient";
 import { getAuthToken, clearTokenCache } from "@/utils/auth";
 import { apiBaseUrl } from "@/config/env";
 import type {
+  CompanyCvDrop,
   CompanyDetail,
   CompanyListResult,
   CompanyVerification,
@@ -56,5 +57,21 @@ export const companyAdminApi = {
   async setReference(id: string, referenceCode: string | null): Promise<CompanyDetail> {
     const res = await client.patch(`/${encodeURIComponent(id)}/reference`, { referenceCode });
     return res.data.data;
+  },
+
+  /**
+   * The company's CV drop (its employer's code and candidate-app link) for the
+   * poster. Creates the code when the employer has none yet (audited).
+   * 404 NO_EMPLOYER when no employer account uses the company.
+   */
+  async getCvDrop(id: string): Promise<CompanyCvDrop> {
+    const res = await client.get(`/${encodeURIComponent(id)}/cv-drop`);
+    return res.data.data;
+  },
+
+  /** The company logo as a PNG for the poster. 404 when there is none or it can't load. */
+  async getCvDropLogoBlob(id: string): Promise<Blob> {
+    const res = await client.get(`/${encodeURIComponent(id)}/cv-drop/logo`, { responseType: "blob" });
+    return res.data as Blob;
   },
 };

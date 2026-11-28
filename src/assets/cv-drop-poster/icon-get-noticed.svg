@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Get Noticed</title>
+  <g fill="#0A2547">
+    <!-- side people -->
+    <circle cx="14" cy="22" r="6.5"/>
+    <path d="M2 46c0-8 5-13 12-13 3.2 0 5.9 1 8 2.9-3.1 2.9-5 7-5 12.1H2z"/>
+    <circle cx="50" cy="22" r="6.5"/>
+    <path d="M62 46c0-8-5-13-12-13-3.2 0-5.9 1-8 2.9 3.1 2.9 5 7 5 12.1h15z"/>
+    <!-- centre person -->
+    <circle cx="32" cy="18" r="8.5"/>
+    <path d="M17 50c0-10.5 6.5-17 15-17s15 6.5 15 17z"/>
+  </g>
+</svg>
