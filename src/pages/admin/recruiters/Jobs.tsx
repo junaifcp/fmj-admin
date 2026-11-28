@@ -302,10 +302,10 @@ const JobsPage: React.FC = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Job title"
+                placeholder="Job title or company"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 w-52"
+                className="pl-10 w-64"
               />
             </div>
             {SELECTS.map((s) => (
